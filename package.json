@@ -1,0 +1,51 @@
+{
+	"name": "@jalalix/typescript",
+	"version": "0.1.0",
+	"private": false,
+	"main": "index.js",
+	"module": "index.js",
+	"types": "index.d.ts",
+	"description": "",
+	"author": "Hossein Maklavani <hos.mohamadi@gmail.com> (https://maklavani.dev/)",
+	"contributors": [
+		{
+			"name": "Hossein Maklavani",
+			"email": "hos.mohamadi@gmail.com",
+			"url": "https://maklavani.dev/"
+		}
+	],
+	"scripts": {
+		"build": "npm run remove && tsc --build tsconfig.json",
+		"remove": "ts-node scripts/remove.mjs"
+	},
+	"license": "MIT",
+	"keywords": [
+		"typescript"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jalalix/typescript.git"
+	},
+	"funding": [
+		{
+			"type": "open_collective",
+			"url": "https://opencollective.com/jalalix"
+		}
+	],
+	"bugs": {
+		"url": "https://github.com/jalalix/typescript/issues"
+	},
+	"homepage": "https://jalalix.com",
+	"files": [
+		"index.d.ts",
+		"index.js",
+		"LICENSE",
+		"README.md"
+	],
+	"dependencies": {
+	},
+	"devDependencies": {
+	},
+	"peerDependencies": {
+	}
+}
