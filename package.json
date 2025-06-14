@@ -6,20 +6,27 @@
 	"module": "index.js",
 	"types": "index.d.ts",
 	"description": "",
-	"author": "Hossein Maklavani <hos.mohamadi@gmail.com> (https://maklavani.dev/)",
+	"author": "Hossein Maklavani <hos.mohamadi@gmail.com> (https://maklavani.dev)",
 	"contributors": [
 		{
 			"name": "Hossein Maklavani",
 			"email": "hos.mohamadi@gmail.com",
-			"url": "https://maklavani.dev/"
+			"url": "https://maklavani.dev"
 		}
 	],
 	"scripts": {
+		"dev": "nodemon src/index.ts",
 		"build": "npm run remove && tsc --build tsconfig.json",
 		"remove": "ts-node scripts/remove.mjs"
 	},
 	"license": "MIT",
 	"keywords": [
+		"jalali",
+		"persian",
+		"shamsi",
+		"khorshidi",
+		"calendar",
+		"date",
 		"typescript"
 	],
 	"repository": {
@@ -42,10 +49,10 @@
 		"LICENSE",
 		"README.md"
 	],
-	"dependencies": {
-	},
 	"devDependencies": {
-	},
-	"peerDependencies": {
+		"nodemon": "^3.1.10",
+		"rimraf": "^6.0.1",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.8.3"
 	}
 }
