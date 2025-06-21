@@ -196,6 +196,34 @@ class JalaliX extends Date {
 		return this.toPersian(`${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`)
 	}
 
+	private normalizeDate(date: number): number {
+		return super.setDate(super.getDate() + date)
+	}
+
+	private normalizeJalali(jDate: JalaliDate, year: number, month: number, day: number): number {
+		// Normalize month
+		if (month < 1) {
+			const yearDiff = Math.ceil((1 - month) / 12)
+			year -= yearDiff
+			month = 12 * yearDiff + month
+		} else if (month > 12) {
+			const yearDiff = Math.floor((month - 1) / 12)
+			year += yearDiff
+			month = month - 12 * yearDiff
+		}
+
+		// Check last day of month
+		if (month > 6 && month < 12 && day > 30) day = 30
+		else if (month === 12) {
+			const isLeapYear = this.checkLeapYear(year)
+
+			if (isLeapYear && day > 30) day = 30
+			else if (!isLeapYear && day > 29) day = 29
+		}
+
+		return super.setTime(this.toGregorian({ ...jDate, ...{ year, month, day } }))
+	}
+
 	/** Returns a string representation of a date. The format of the string depends on the locale. */
 	public toString(): string {
 		const jDate = this.toJalali()
@@ -273,7 +301,7 @@ class JalaliX extends Date {
 		const jDate = this.toJalali()
 
 		// Normalize date
-		super.setDate(super.getDate() + (date - jDate.day))
+		this.normalizeDate(date - jDate.day)
 
 		return this.getTime()
 	}
@@ -284,40 +312,18 @@ class JalaliX extends Date {
 	 * @param date A numeric value representing the day of the month. If this value is not supplied, the value from a call to the getDate method is used.
 	 */
 	public setMonth(month: number, date?: number): number {
-		const jDate = this.toJalali()
-		let yearValue = jDate.year
-		let monthValue = month + 1
-		let dayValue = jDate.day
+		let jDate = this.toJalali()
 
-		// Normalize month
-		if (monthValue < 1) {
-			const yearDiff = Math.ceil((1 - monthValue) / 12)
-			yearValue -= yearDiff
-			monthValue = 12 * yearDiff + monthValue
-		} else if (monthValue > 12) {
-			const yearDiff = Math.floor((monthValue - 1) / 12)
-			yearValue += yearDiff
-			monthValue = monthValue - 12 * yearDiff
-		}
-
-		// Check last day of month
-		if (monthValue > 6 && monthValue < 12 && dayValue > 30) dayValue = 30
-		else if (monthValue === 12) {
-			const isLeapYear = this.checkLeapYear(yearValue)
-
-			if (isLeapYear && dayValue > 30) dayValue = 30
-			else if (!isLeapYear && dayValue > 29) dayValue = 29
-		}
-
-		const time = this.toGregorian({ ...jDate, ...{ year: yearValue, month: monthValue, day: dayValue } })
-		super.setTime(time)
+		// Normalize Jalali
+		this.normalizeJalali(jDate, jDate.year, month + 1, jDate.day)
 
 		// Reset
 		this.reset()
 
 		// Normalize date
 		if (date) {
-			super.setDate(super.getDate() + (date - dayValue))
+			jDate = this.toJalali()
+			this.normalizeDate(date - jDate.day)
 
 			// Reset
 			this.reset()
@@ -332,13 +338,26 @@ class JalaliX extends Date {
 	 * @param month A zero-based numeric value for the month (0 for Farvardin, 11 for Esfand). Must be specified if numDate is specified.
 	 * @param date A numeric value equal for the day of the month.
 	 */
-	// public setFullYear(year: number, month?: number, date?: number): number {}
+	public setFullYear(year: number, month?: number, date?: number): number {
+		let jDate = this.toJalali()
 
-	/** Returns a date as a string value in ISO format. */
-	// public toISOString(): string {}
+		// Normalize Jalali
+		this.normalizeJalali(jDate, year, month ? month + 1 : jDate.month, jDate.day)
 
-	/** Used by the JSON.stringify method to enable the transformation of an object's data for JavaScript Object Notation (JSON) serialization. */
-	// public toJSON(key?: any): string {}
+		// Reset
+		this.reset()
+
+		// Normalize date
+		if (date) {
+			jDate = this.toJalali()
+			this.normalizeDate(date - jDate.day)
+
+			// Reset
+			this.reset()
+		}
+
+		return this.getTime()
+	}
 }
 
 export default JalaliX
