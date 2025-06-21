@@ -3,6 +3,7 @@ All notable changes to this package will be documented in this file.
 
 - Overriding `setMonth` function
 - Overriding `setFullYear` function
+- Changed `am` and `pm` string
 
 ## 0.2.0
 - Overriding basic functions of date class
