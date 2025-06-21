@@ -1,14 +1,5 @@
 // Types
-export type JalaliDate = {
-	year: number
-	month: number
-	day: number
-	hours: number
-	min: number
-	sec: number
-	ms: number
-	isLeapYear: boolean
-}
+import type { JalaliDate } from './index.types'
 
 class JalaliX extends Date {
 	jalali: JalaliDate = {
@@ -28,6 +19,7 @@ class JalaliX extends Date {
 	dateLength = 86400000
 	weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
 	months = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+	persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
 	am = 'قبل از ظهر'
 	pm = 'بعد از ظهر'
 
@@ -73,12 +65,10 @@ class JalaliX extends Date {
 
 							const isLeapYear = this.checkLeapYear(this.jalali.year)
 							this.jalali.day = isLeapYear ? 30 : 29
-
-							if (isLeapYear) console.log(this.jalali.year)
-						} else if (this.jalali.month > 1 && this.jalali.month < 8) {
+						} else if (this.jalali.month < 8) {
 							this.jalali.month--
 							this.jalali.day = 31
-						} else if (this.jalali.month > 7 && this.jalali.month < 13) {
+						} else if (this.jalali.month < 13) {
 							this.jalali.month--
 							this.jalali.day = 30
 						}
@@ -92,7 +82,7 @@ class JalaliX extends Date {
 		return this.jalali
 	}
 
-	private toGregorian(date: JalaliDate): number {
+	private toGregorian(jDate: JalaliDate): number {
 		const jalali = {
 			year: 1348,
 			month: 10,
@@ -104,14 +94,14 @@ class JalaliX extends Date {
 			isLeapYear: false
 		}
 
-		let output = (date.hours * 24 + date.min * 60 + date.sec) * 1000 + date.ms
+		let diffDays = 0
 
-		if (date.year > 1348 || (date.year === 1348 && date.month >= 10) || (date.year === 1348 && date.month === 10 && date.day >= 11))
+		if (jDate.year > 1348 || (jDate.year === 1348 && jDate.month >= 10) || (jDate.year === 1348 && jDate.month === 10 && jDate.day >= 11))
 			for (let i = 0; i < Infinity; i++) {
-				if (jalali.year === date.year && jalali.month === date.month && jalali.day === date.day) break
+				if (jalali.year === jDate.year && jalali.month === jDate.month && jalali.day === jDate.day) break
 
+				diffDays++
 				jalali.day++
-				output += this.dateLength
 
 				if (jalali.month < 7 && jalali.day > 31) {
 					jalali.month++
@@ -133,10 +123,40 @@ class JalaliX extends Date {
 					}
 				}
 			}
-		else if (date.year < 1348) {
+		else if (jDate.year < 1348 || (jDate.year === 1348 && jDate.month < 10) || (jDate.year === 1348 && jDate.month === 10 && jDate.day < 11)) {
+			for (let i = 0; i < Infinity; i++) {
+				if (jalali.year === jDate.year && jalali.month === jDate.month && jalali.day === jDate.day) break
+
+				diffDays--
+				jalali.day--
+
+				if (jalali.day < 1)
+					if (jalali.month === 1) {
+						jalali.year--
+						jalali.month = 12
+
+						const isLeapYear = this.checkLeapYear(jalali.year)
+						jalali.day = isLeapYear ? 30 : 29
+					} else if (jalali.month < 8) {
+						jalali.month--
+						jalali.day = 31
+					} else if (jalali.month < 13) {
+						jalali.month--
+						jalali.day = 30
+					}
+			}
 		}
 
-		return super.setTime(output)
+		const outputTime =
+			diffDays * this.dateLength + (super.getHours() * 3600 + (super.getMinutes() + super.getTimezoneOffset()) * 60 + super.getSeconds()) * 1000 + super.getMilliseconds()
+
+		return outputTime
+	}
+
+	private toPersian(str: string): string {
+		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
+
+		return str
 	}
 
 	private checkLeapYear(year: number): boolean {
@@ -166,53 +186,57 @@ class JalaliX extends Date {
 	}
 
 	private getJalaliWeekDay(): string {
-		return this.weekDays[this.getDay() - 1]
+		return this.weekDays[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
 
 	private getTimezone(): string {
 		const dateString = super.toString()
 		const timezoneMatch = dateString.match(/ GMT([0-9a-zA-Z\+\-\(\) ]+)/)
 
-		return `${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`
+		return this.toPersian(`${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`)
 	}
 
 	/** Returns a string representation of a date. The format of the string depends on the locale. */
 	public toString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.year)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.day)} ${jDate.hours}:${this.addZero(
-			jDate.min
-		)}:${this.addZero(jDate.sec)}${this.getTimezone()}`
+		return this.toPersian(
+			`${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)} ${jDate.hours}:${this.addZero(
+				jDate.min
+			)}:${this.addZero(jDate.sec)}${this.getTimezone()}`
+		)
 	}
 
 	/** Returns a date as a string value. */
 	public toDateString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.year)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.day)}`
+		return this.toPersian(`${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`)
 	}
 
 	/** Returns a value as a string value appropriate to the host environment's current locale. */
 	public toLocaleString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${
-			jDate.hours > 12 ? this.pm : this.am
-		}`
+		return this.toPersian(
+			`${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${
+				jDate.hours > 12 ? this.pm : this.am
+			}`
+		)
 	}
 
 	/** Returns a date as a string value appropriate to the host environment's current locale. */
 	public toLocaleDateString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)}`
+		return this.toPersian(`${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)}`)
 	}
 
 	/** Returns a time as a string value appropriate to the host environment's current locale. */
 	public toLocaleTimeString(): string {
 		const jDate = this.toJalali()
 
-		return `${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${jDate.hours > 12 ? this.pm : this.am}`
+		return this.toPersian(`${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${jDate.hours > 12 ? this.pm : this.am}`)
 	}
 
 	/** Gets the year, using local time. */
@@ -238,7 +262,7 @@ class JalaliX extends Date {
 
 	/** Gets the day of the week, using local time. */
 	public getDay(): number {
-		return (super.getDay() - this.firstDayOfWeek + 1 + 7) % 7
+		return (super.getDay() - this.firstDayOfWeek + 7 + 1) % 7
 	}
 
 	/**
@@ -247,39 +271,65 @@ class JalaliX extends Date {
 	 */
 	public setDate(date: number): number {
 		const jDate = this.toJalali()
-		const output = this.toGregorian({ ...jDate, ...{ day: date } })
 
-		// Reset
-		this.reset()
+		// Normalize date
+		super.setDate(super.getDate() + (date - jDate.day))
 
-		return output
+		return this.getTime()
 	}
 
 	/**
 	 * Sets the month value in the Date object using local time.
-	 * @param month A numeric value equal to the month. The value for January is 0, and other month values follow consecutively.
+	 * @param month A numeric value equal to the month. The value for Farvardin is 0, and other month values follow consecutively.
 	 * @param date A numeric value representing the day of the month. If this value is not supplied, the value from a call to the getDate method is used.
 	 */
 	public setMonth(month: number, date?: number): number {
 		const jDate = this.toJalali()
-		const diffMonth = super.getMonth() + (month - jDate.month)
-		let output = super.setDate(diffMonth)
+		let yearValue = jDate.year
+		let monthValue = month + 1
+		let dayValue = jDate.day
 
-		if (date) {
-			const diffDate = super.getDate() + (date - jDate.day)
-			output = super.setDate(diffDate)
+		// Normalize month
+		if (monthValue < 1) {
+			const yearDiff = Math.ceil((1 - monthValue) / 12)
+			yearValue -= yearDiff
+			monthValue = 12 * yearDiff + monthValue
+		} else if (monthValue > 12) {
+			const yearDiff = Math.floor((monthValue - 1) / 12)
+			yearValue += yearDiff
+			monthValue = monthValue - 12 * yearDiff
 		}
+
+		// Check last day of month
+		if (monthValue > 6 && monthValue < 12 && dayValue > 30) dayValue = 30
+		else if (monthValue === 12) {
+			const isLeapYear = this.checkLeapYear(yearValue)
+
+			if (isLeapYear && dayValue > 30) dayValue = 30
+			else if (!isLeapYear && dayValue > 29) dayValue = 29
+		}
+
+		const time = this.toGregorian({ ...jDate, ...{ year: yearValue, month: monthValue, day: dayValue } })
+		super.setTime(time)
 
 		// Reset
 		this.reset()
 
-		return output
+		// Normalize date
+		if (date) {
+			super.setDate(super.getDate() + (date - dayValue))
+
+			// Reset
+			this.reset()
+		}
+
+		return this.getTime()
 	}
 
 	/**
 	 * Sets the year of the Date object using local time.
 	 * @param year A numeric value for the year.
-	 * @param month A zero-based numeric value for the month (0 for January, 11 for December). Must be specified if numDate is specified.
+	 * @param month A zero-based numeric value for the month (0 for Farvardin, 11 for Esfand). Must be specified if numDate is specified.
 	 * @param date A numeric value equal for the day of the month.
 	 */
 	// public setFullYear(year: number, month?: number, date?: number): number {}

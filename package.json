@@ -46,9 +46,14 @@
 	"files": [
 		"index.d.ts",
 		"index.js",
+		"index.types.d.ts",
+		"index.types.js",
 		"LICENSE",
 		"README.md"
 	],
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com"
+	},
 	"devDependencies": {
 		"nodemon": "^3.1.10",
 		"rimraf": "^6.0.1",
