@@ -349,7 +349,9 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
-	public toPersian(str: string): string {
+	public toPersian(str?: string): string {
+		if (!str) str = this.format('DD MMM YYYY HH:mm:ss')
+
 		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
 
 		return str
@@ -386,20 +388,20 @@ class JalaliX extends Date {
 		output = output.replace(/ss/g, this.addZero(this.getSeconds()))
 		output = output.replace(/s/g, this.getSeconds().toString())
 
-		return output
+		return this.toPersian(output)
 	}
 
-	public addDays(date: number): number {
+	public addDays(date: number): JalaliX {
 		// Normalize date
 		this.normalizeDate(date)
 
 		// Reset
 		this.reset()
 
-		return this.getTime()
+		return this
 	}
 
-	public addMonths(month: number): number {
+	public addMonths(month: number): JalaliX {
 		let jDate = this.toJalali()
 
 		// Normalize Jalali
@@ -408,10 +410,10 @@ class JalaliX extends Date {
 		// Reset
 		this.reset()
 
-		return this.getTime()
+		return this
 	}
 
-	public addYears(year: number): number {
+	public addYears(year: number): JalaliX {
 		let jDate = this.toJalali()
 
 		// Normalize Jalali
@@ -420,7 +422,7 @@ class JalaliX extends Date {
 		// Reset
 		this.reset()
 
-		return this.getTime()
+		return this
 	}
 }
 

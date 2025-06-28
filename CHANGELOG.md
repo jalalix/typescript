@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Changed return of add functions
+
 ## 0.4.0
 - Added more options to `format` function
 - Created `addDays` function
