@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Created `format` function for custom date string
+
 ## 0.3.0
 - Overriding `setMonth` function
 - Overriding `setFullYear` function

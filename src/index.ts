@@ -153,12 +153,6 @@ class JalaliX extends Date {
 		return outputTime
 	}
 
-	private toPersian(str: string): string {
-		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
-
-		return str
-	}
-
 	private checkLeapYear(year: number): boolean {
 		if (year > 0) {
 			const checkYear: number = (year + 2346) * this.leapYearDivision
@@ -193,7 +187,7 @@ class JalaliX extends Date {
 		const dateString = super.toString()
 		const timezoneMatch = dateString.match(/ GMT([0-9a-zA-Z\+\-\(\) ]+)/)
 
-		return this.toPersian(`${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`)
+		return `${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`
 	}
 
 	private normalizeDate(date: number): number {
@@ -228,43 +222,39 @@ class JalaliX extends Date {
 	public toString(): string {
 		const jDate = this.toJalali()
 
-		return this.toPersian(
-			`${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)} ${jDate.hours}:${this.addZero(
-				jDate.min
-			)}:${this.addZero(jDate.sec)}${this.getTimezone()}`
-		)
+		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)} ${jDate.hours}:${this.addZero(
+			jDate.min
+		)}:${this.addZero(jDate.sec)}${this.getTimezone()}`
 	}
 
 	/** Returns a date as a string value. */
 	public toDateString(): string {
 		const jDate = this.toJalali()
 
-		return this.toPersian(`${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`)
+		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`
 	}
 
 	/** Returns a value as a string value appropriate to the host environment's current locale. */
 	public toLocaleString(): string {
 		const jDate = this.toJalali()
 
-		return this.toPersian(
-			`${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${
-				jDate.hours > 12 ? this.pm : this.am
-			}`
-		)
+		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${
+			jDate.hours > 12 ? this.pm : this.am
+		}`
 	}
 
 	/** Returns a date as a string value appropriate to the host environment's current locale. */
 	public toLocaleDateString(): string {
 		const jDate = this.toJalali()
 
-		return this.toPersian(`${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)}`)
+		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)}`
 	}
 
 	/** Returns a time as a string value appropriate to the host environment's current locale. */
 	public toLocaleTimeString(): string {
 		const jDate = this.toJalali()
 
-		return this.toPersian(`${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${jDate.hours > 12 ? this.pm : this.am}`)
+		return `${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${jDate.hours > 12 ? this.pm : this.am}`
 	}
 
 	/** Gets the year, using local time. */
@@ -357,6 +347,37 @@ class JalaliX extends Date {
 		}
 
 		return this.getTime()
+	}
+
+	public toPersian(str: string): string {
+		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
+
+		return str
+	}
+
+	public format(str: string): string {
+		let output = str
+
+		// Year
+		output = output.replace(/YYYY/g, this.getFullYear().toString())
+		output = output.replace(/YYY/g, this.getFullYear().toString().substring(1, 4))
+		output = output.replace(/YY/g, this.getFullYear().toString().substring(2, 4))
+		output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
+
+		// Month
+		output = output.replace(/MM/g, this.addZero(this.getMonth()))
+		output = output.replace(/M/g, this.getMonth().toString())
+
+		// Day
+		output = output.replace(/DD/g, this.addZero(this.getDate()))
+
+		// Time
+		output = output.replace(/HH/g, this.addZero(this.getHours()))
+		output = output.replace(/mm/g, this.addZero(this.getMinutes()))
+		output = output.replace(/sss/g, this.getMilliseconds().toString())
+		output = output.replace(/ss/g, this.addZero(this.getSeconds()))
+
+		return output
 	}
 }
 
