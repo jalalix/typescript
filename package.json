@@ -21,10 +21,13 @@
 	},
 	"license": "MIT",
 	"keywords": [
+		"jalalix",
 		"jalali",
-		"persian",
 		"shamsi",
+		"persian",
 		"khorshidi",
+		"solar",
+		"hijri",
 		"calendar",
 		"date",
 		"typescript"

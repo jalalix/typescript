@@ -365,17 +365,26 @@ class JalaliX extends Date {
 		output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
 
 		// Month
+		output = output.replace(/MMM/g, this.getJalaliMonth(this.getMonth()))
 		output = output.replace(/MM/g, this.addZero(this.getMonth()))
 		output = output.replace(/M/g, this.getMonth().toString())
 
 		// Day
 		output = output.replace(/DD/g, this.addZero(this.getDate()))
+		output = output.replace(/D/g, this.getDate().toString())
 
-		// Time
+		// Hours
 		output = output.replace(/HH/g, this.addZero(this.getHours()))
+		output = output.replace(/H/g, this.getHours().toString())
+
+		// Minutes
 		output = output.replace(/mm/g, this.addZero(this.getMinutes()))
+		output = output.replace(/m/g, this.getMinutes().toString())
+
+		// Seconds
 		output = output.replace(/sss/g, this.getMilliseconds().toString())
 		output = output.replace(/ss/g, this.addZero(this.getSeconds()))
+		output = output.replace(/s/g, this.getSeconds().toString())
 
 		return output
 	}
