@@ -398,6 +398,30 @@ class JalaliX extends Date {
 
 		return this.getTime()
 	}
+
+	public addMonths(month: number): number {
+		let jDate = this.toJalali()
+
+		// Normalize Jalali
+		this.normalizeJalali(jDate, jDate.year, jDate.month + month, jDate.day)
+
+		// Reset
+		this.reset()
+
+		return this.getTime()
+	}
+
+	public addYears(year: number): number {
+		let jDate = this.toJalali()
+
+		// Normalize Jalali
+		this.normalizeJalali(jDate, jDate.year + year, jDate.month, jDate.day)
+
+		// Reset
+		this.reset()
+
+		return this.getTime()
+	}
 }
 
 export default JalaliX
