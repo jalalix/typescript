@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+## 0.3.1
 - Created `format` function for custom date string
 
 ## 0.3.0
