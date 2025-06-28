@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+## 0.4.0
 - Added more options to `format` function
 - Created `addDays` function
 - Created `addMonths` and `addYears` function
