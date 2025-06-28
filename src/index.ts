@@ -17,11 +17,12 @@ class JalaliX extends Date {
 	leapYearDivision = 0.24219858156
 	firstDayOfWeek = 6
 	dateLength = 86400000
-	weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
-	months = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+	weekDaysNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
+	weekDaysCharacters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+	monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 	persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-	am = 'ق.ظ'
-	pm = 'ب.ظ'
+	am = 'ق.ظ.'
+	pm = 'ب.ظ.'
 
 	public toJalali(): JalaliDate {
 		if (!this.isConverted) {
@@ -176,11 +177,11 @@ class JalaliX extends Date {
 	}
 
 	private getJalaliMonth(number: number): string {
-		return this.months[number - 1]
+		return this.monthsNames[number - 1]
 	}
 
 	private getJalaliWeekDay(): string {
-		return this.weekDays[(this.getDay() + this.firstDayOfWeek) % 7]
+		return this.weekDaysNames[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
 
 	private getTimezone(): string {
@@ -238,9 +239,9 @@ class JalaliX extends Date {
 	public toLocaleString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${
-			jDate.hours > 12 ? this.pm : this.am
-		}`
+		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(
+			jDate.sec
+		)} ${this.getMeridiem()}`
 	}
 
 	/** Returns a date as a string value appropriate to the host environment's current locale. */
@@ -254,7 +255,7 @@ class JalaliX extends Date {
 	public toLocaleTimeString(): string {
 		const jDate = this.toJalali()
 
-		return `${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${jDate.hours > 12 ? this.pm : this.am}`
+		return `${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${this.getMeridiem()}`
 	}
 
 	/** Gets the year, using local time. */
@@ -357,40 +358,6 @@ class JalaliX extends Date {
 		return str
 	}
 
-	public format(str: string): string {
-		let output = str
-
-		// Year
-		output = output.replace(/YYYY/g, this.getFullYear().toString())
-		output = output.replace(/YYY/g, this.getFullYear().toString().substring(1, 4))
-		output = output.replace(/YY/g, this.getFullYear().toString().substring(2, 4))
-		output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
-
-		// Month
-		output = output.replace(/MMM/g, this.getJalaliMonth(this.getMonth()))
-		output = output.replace(/MM/g, this.addZero(this.getMonth()))
-		output = output.replace(/M/g, this.getMonth().toString())
-
-		// Day
-		output = output.replace(/DD/g, this.addZero(this.getDate()))
-		output = output.replace(/D/g, this.getDate().toString())
-
-		// Hours
-		output = output.replace(/HH/g, this.addZero(this.getHours()))
-		output = output.replace(/H/g, this.getHours().toString())
-
-		// Minutes
-		output = output.replace(/mm/g, this.addZero(this.getMinutes()))
-		output = output.replace(/m/g, this.getMinutes().toString())
-
-		// Seconds
-		output = output.replace(/sss/g, this.getMilliseconds().toString())
-		output = output.replace(/ss/g, this.addZero(this.getSeconds()))
-		output = output.replace(/s/g, this.getSeconds().toString())
-
-		return this.toPersian(output)
-	}
-
 	public addDays(date: number): JalaliX {
 		// Normalize date
 		this.normalizeDate(date)
@@ -423,6 +390,53 @@ class JalaliX extends Date {
 		this.reset()
 
 		return this
+	}
+
+	public getMeridiem() {
+		const jDate = this.toJalali()
+
+		return jDate.hours > 12 ? this.pm : this.am
+	}
+
+	public format(str: string): string {
+		let output = str
+
+		// Year
+		output = output.replace(/YYYY/g, this.getFullYear().toString())
+		output = output.replace(/YYY/g, this.getFullYear().toString().substring(1, 4))
+		output = output.replace(/YY/g, this.getFullYear().toString().substring(2, 4))
+		output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
+
+		// Month
+		output = output.replace(/MMM/g, this.getJalaliMonth(this.getMonth()))
+		output = output.replace(/MM/g, this.addZero(this.getMonth()))
+		output = output.replace(/M/g, this.getMonth().toString())
+
+		// Day
+		output = output.replace(/DD/g, this.addZero(this.getDate()))
+		output = output.replace(/D/g, this.getDate().toString())
+
+		// Hours
+		output = output.replace(/HH/g, this.addZero(this.getHours()))
+		output = output.replace(/H/g, this.getHours().toString())
+
+		// Minutes
+		output = output.replace(/mm/g, this.addZero(this.getMinutes()))
+		output = output.replace(/m/g, this.getMinutes().toString())
+
+		// Seconds
+		output = output.replace(/ss/g, this.addZero(this.getSeconds()))
+		output = output.replace(/s/g, this.getSeconds().toString())
+
+		// Milliseconds
+		output = output.replace(/sss/g, this.getMilliseconds().toString())
+		output = output.replace(/SSS/g, this.getMilliseconds().toString())
+
+		// Meridiem
+		output = output.replace(/A/g, this.getMeridiem())
+		output = output.replace(/a/g, this.getMeridiem())
+
+		return this.toPersian(output)
 	}
 }
 

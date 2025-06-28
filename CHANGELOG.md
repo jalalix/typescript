@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Created `getMeridiem` function
+
 ## 0.4.1
 - Changed return of add functions
 
