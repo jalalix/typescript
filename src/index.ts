@@ -388,6 +388,16 @@ class JalaliX extends Date {
 
 		return output
 	}
+
+	public addDays(date: number): number {
+		// Normalize date
+		this.normalizeDate(date)
+
+		// Reset
+		this.reset()
+
+		return this.getTime()
+	}
 }
 
 export default JalaliX

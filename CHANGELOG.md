@@ -2,6 +2,7 @@
 All notable changes to this package will be documented in this file.
 
 - Added more options to `format` function
+- Created `addDays` function
 
 ## 0.3.1
 - Created `format` function for custom date string
