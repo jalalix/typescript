@@ -2,7 +2,7 @@
 import type { JalaliDate } from './index.types'
 
 class JalaliX extends Date {
-	jalali: JalaliDate = {
+	private jalali: JalaliDate = {
 		year: 1348,
 		month: 10,
 		day: 11,
@@ -13,16 +13,16 @@ class JalaliX extends Date {
 		isLeapYear: false
 	}
 
-	isConverted = false
-	leapYearDivision = 0.24219858156
-	firstDayOfWeek = 6
-	dateLength = 86400000
-	weekDaysNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
-	weekDaysCharacters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
-	monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
-	persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-	am = 'ق.ظ.'
-	pm = 'ب.ظ.'
+	private isConverted = false
+	private leapYearDivision = 0.24219858156
+	private firstDayOfWeek = 6
+	private dateLength = 86400000
+	private weekDaysNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
+	private weekDaysCharacters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+	private monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+	static persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+	private am = 'ق.ظ.'
+	private pm = 'ب.ظ.'
 
 	public toJalali(): JalaliDate {
 		if (!this.isConverted) {
@@ -350,12 +350,41 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
-	public toPersian(str?: string): string {
-		if (!str) str = this.format('DD MMM YYYY HH:mm:ss')
+	public static isValidDate(date: unknown): boolean {
+		return date instanceof Date && !isNaN(Number(date))
+	}
 
+	public static toPersian(str: string): string {
 		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
 
 		return str
+	}
+
+	public getDayOfYear(): number {
+		const jDate = this.toJalali()
+		let output = jDate.day
+
+		if (jDate.month < 7) output += (jDate.month - 1) * 31
+		else if (jDate.month < 12) output += 186 + (jDate.month - 7) * 30
+		else output += 336
+
+		return output
+	}
+
+	public getDayISO(): number {
+		return ((this.getDay() + 6) % 7) + 1
+	}
+
+	public getWeekOfYear(): number {
+		const dayOfYear = this.getDayOfYear()
+
+		// Find first day of year
+		const d = new JalaliX(this.valueOf()).addDays(-1 * dayOfYear + 1)
+		const dayOfWeek = d.getDayISO()
+
+		let outout = Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
+
+		return outout
 	}
 
 	public addDays(date: number): JalaliX {
@@ -402,41 +431,55 @@ class JalaliX extends Date {
 		let output = str
 
 		// Year
-		output = output.replace(/YYYY/g, this.getFullYear().toString())
-		output = output.replace(/YYY/g, this.getFullYear().toString().substring(1, 4))
-		output = output.replace(/YY/g, this.getFullYear().toString().substring(2, 4))
-		output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
+		if (output.match(/YYYY/)) output = output.replace(/YYYY/g, this.getFullYear().toString())
+		if (output.match(/YYY/)) output = output.replace(/YYY/g, this.getFullYear().toString().substring(1, 4))
+		if (output.match(/YY/)) output = output.replace(/YY/g, this.getFullYear().toString().substring(2, 4))
+		if (output.match(/Y/)) output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
 
 		// Month
-		output = output.replace(/MMM/g, this.getJalaliMonth(this.getMonth()))
-		output = output.replace(/MM/g, this.addZero(this.getMonth()))
-		output = output.replace(/M/g, this.getMonth().toString())
+		if (output.match(/MMM/)) output = output.replace(/MMM/g, this.getJalaliMonth(this.getMonth()))
+		if (output.match(/MM/)) output = output.replace(/MM/g, this.addZero(this.getMonth()))
+		if (output.match(/M/)) output = output.replace(/M/g, this.getMonth().toString())
+
+		// Week
+		if (output.match(/W/)) output = output.replace(/W/g, this.addZero(this.getWeekOfYear()))
+		if (output.match(/w/)) output = output.replace(/w/g, this.getWeekOfYear().toString())
+		if (output.match(/E/)) output = output.replace(/E/g, this.getDayISO().toString())
+		if (output.match(/e/)) output = output.replace(/e/g, this.getDay().toString())
 
 		// Day
-		output = output.replace(/DD/g, this.addZero(this.getDate()))
-		output = output.replace(/D/g, this.getDate().toString())
+		if (output.match(/DDDD/)) output = output.replace(/DDDD/g, this.addZero(this.getDayOfYear()))
+		if (output.match(/DDD/)) output = output.replace(/DDD/g, this.getDayOfYear().toString())
+		if (output.match(/DD/)) output = output.replace(/DD/g, this.addZero(this.getDate()))
+		if (output.match(/D/)) output = output.replace(/D/g, this.getDate().toString())
 
 		// Hours
-		output = output.replace(/HH/g, this.addZero(this.getHours()))
-		output = output.replace(/H/g, this.getHours().toString())
+		if (output.match(/HH/)) output = output.replace(/HH/g, this.addZero(this.getHours()))
+		if (output.match(/H/)) output = output.replace(/H/g, this.getHours().toString())
+		if (output.match(/hh/)) output = output.replace(/hh/g, this.addZero(this.getHours() % 12))
+		if (output.match(/h/)) output = output.replace(/h/g, (this.getHours() % 12).toString())
 
 		// Minutes
-		output = output.replace(/mm/g, this.addZero(this.getMinutes()))
-		output = output.replace(/m/g, this.getMinutes().toString())
+		if (output.match(/mm/)) output = output.replace(/mm/g, this.addZero(this.getMinutes()))
+		if (output.match(/m/)) output = output.replace(/m/g, this.getMinutes().toString())
 
 		// Seconds
-		output = output.replace(/ss/g, this.addZero(this.getSeconds()))
-		output = output.replace(/s/g, this.getSeconds().toString())
+		if (output.match(/ss/)) output = output.replace(/ss/g, this.addZero(this.getSeconds()))
+		if (output.match(/s/)) output = output.replace(/s/g, this.getSeconds().toString())
 
 		// Milliseconds
-		output = output.replace(/sss/g, this.getMilliseconds().toString())
-		output = output.replace(/SSS/g, this.getMilliseconds().toString())
+		if (output.match(/sss/)) output = output.replace(/sss/g, this.getMilliseconds().toString())
+		if (output.match(/SSS/)) output = output.replace(/SSS/g, this.getMilliseconds().toString())
 
 		// Meridiem
-		output = output.replace(/A/g, this.getMeridiem())
-		output = output.replace(/a/g, this.getMeridiem())
+		if (output.match(/A/)) output = output.replace(/A/g, this.getMeridiem())
+		if (output.match(/a/)) output = output.replace(/a/g, this.getMeridiem())
 
-		return this.toPersian(output)
+		// Unix Timestamp
+		if (output.match(/X/)) output = output.replace(/X/g, Math.floor(this.getTime() / 1000).toString())
+		if (output.match(/x/)) output = output.replace(/x/g, this.getTime().toString())
+
+		return output
 	}
 }
 
