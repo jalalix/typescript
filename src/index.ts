@@ -350,6 +350,10 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
+	public clone() {
+		return new JalaliX(this.valueOf())
+	}
+
 	public static isValidDate(date: unknown): boolean {
 		return date instanceof Date && !isNaN(Number(date))
 	}

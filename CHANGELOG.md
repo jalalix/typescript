@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Created `clone` function
+
 ## 0.4.2
 - Created `getMeridiem` function
 - Created `getDayOfYear` function
