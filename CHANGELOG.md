@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+## 0.5.0
 - Created **start** and **end** functions
 
 ## 0.4.8
