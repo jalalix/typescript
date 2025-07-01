@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Created `normalizeTimezone` function
+
 ## 0.4.7
 - Added `string` type for **create** function
 

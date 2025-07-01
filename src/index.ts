@@ -219,6 +219,18 @@ class JalaliX extends Date {
 		return super.setTime(this.toGregorian({ ...jDate, ...{ year, month, day } }))
 	}
 
+	private normalizeTimezone(timezone: string | undefined): string {
+		if (timezone === undefined || timezone === null) return this.getTimezone()
+		else {
+			const lowered = timezone.toLowerCase()
+
+			if (lowered === 'default') return this.getTimezone()
+			else if (lowered === 'local' || lowered === 'system') return this.getTimezone()
+			else if (lowered === 'utc' || lowered === 'gmt') return 'UTC'
+			else return lowered
+		}
+	}
+
 	/** Returns a string representation of a date. The format of the string depends on the locale. */
 	public toString(): string {
 		const jDate = this.toJalali()
@@ -411,8 +423,8 @@ class JalaliX extends Date {
 		return jDate.hours > 12 ? this.pm : this.am
 	}
 
-	public setTimezone(timezone: string): JalaliX {
-		return new JalaliX(this.toLocaleString(undefined, { timeZone: timezone }))
+	public setTimezone(timezone: string | undefined): JalaliX {
+		return new JalaliX(this.toLocaleString(navigator.language ?? 'en', { timeZone: this.normalizeTimezone(timezone) }))
 	}
 
 	public addDays(date: number): JalaliX {
