@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Created **start** and **end** functions
+
 ## 0.4.8
 - Created `normalizeTimezone` function
 

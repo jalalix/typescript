@@ -18,7 +18,7 @@ class JalaliX extends Date {
 	private firstDayOfWeek = 6
 	private dateLength = 86400000
 	private weekDaysNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
-	private weekDaysCharacters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+	private weekDaysLetters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
 	private monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 	static persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
 	private am = 'ق.ظ.'
@@ -180,8 +180,12 @@ class JalaliX extends Date {
 		return this.monthsNames[number - 1]
 	}
 
-	private getJalaliWeekDay(): string {
+	private getWeekDayName(): string {
 		return this.weekDaysNames[(this.getDay() + this.firstDayOfWeek) % 7]
+	}
+
+	private getWeekDayLetter(): string {
+		return this.weekDaysLetters[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
 
 	private getUTCTimezone(): string {
@@ -235,7 +239,7 @@ class JalaliX extends Date {
 	public toString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)} ${jDate.hours}:${this.addZero(
+		return `${this.getWeekDayName()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)} ${jDate.hours}:${this.addZero(
 			jDate.min
 		)}:${this.addZero(jDate.sec)}${this.getUTCTimezone()}`
 	}
@@ -244,7 +248,7 @@ class JalaliX extends Date {
 	public toDateString(): string {
 		const jDate = this.toJalali()
 
-		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`
+		return `${this.getWeekDayName()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`
 	}
 
 	/** Returns a date as a string value appropriate to the host environment's current locale. */
@@ -386,14 +390,9 @@ class JalaliX extends Date {
 
 	public getWeekOfYear(): number {
 		const dayOfYear = this.getDayOfYear()
+		const dayOfWeek = new JalaliX(this.valueOf()).getStartOfYear().getDayISO()
 
-		// Find first day of year
-		const d = new JalaliX(this.valueOf()).addDays(-1 * dayOfYear + 1)
-		const dayOfWeek = d.getDayISO()
-
-		let output = Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
-
-		return output
+		return Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
 	}
 
 	public getDayOfYear(): number {
@@ -423,13 +422,75 @@ class JalaliX extends Date {
 		return jDate.hours > 12 ? this.pm : this.am
 	}
 
+	public getStartOfYear(): JalaliX {
+		return this.addDays(-1 * this.getDayOfYear() + 1).getStartOfDay()
+	}
+
+	public getStartOfMonth(): JalaliX {
+		return this.addDays(-1 * this.getDate() + 1).getStartOfDay()
+	}
+
+	public getStartOfWeek(): JalaliX {
+		return this.addDays(-1 * this.getDayISO() + 1).getStartOfDay()
+	}
+
+	public getStartOfDay(): JalaliX {
+		this.setHours(0, 0, 0, 0)
+		this.jalali.hours = 0
+		this.jalali.min = 0
+		this.jalali.sec = 0
+		this.jalali.ms = 0
+
+		return this
+	}
+
+	public getEndOfYear(): JalaliX {
+		const jDate = this.toJalali()
+
+		// Find last day
+		const lastDay = jDate.isLeapYear ? 366 : 365
+
+		return this.addDays(lastDay - this.getDayOfYear()).getEndOfDay()
+	}
+
+	public getEndOfMonth(): JalaliX {
+		const jDate = this.toJalali()
+
+		// Find last day
+		let lastDay = 31
+
+		if (jDate.month > 6 && jDate.month < 12) lastDay = 30
+		else if (jDate.month === 12) {
+			if (jDate.isLeapYear) lastDay = 30
+			else lastDay = 29
+		}
+
+		return this.addDays(lastDay - this.getDate()).getEndOfDay()
+	}
+
+	public getEndOfWeek(): JalaliX {
+		return this.addDays(7 - this.getDayISO()).getEndOfDay()
+	}
+
+	public getEndOfDay(): JalaliX {
+		this.setHours(23, 59, 59, 999)
+		this.jalali.hours = 23
+		this.jalali.min = 59
+		this.jalali.sec = 59
+		this.jalali.ms = 999
+
+		return this
+	}
+
 	public setTimezone(timezone: string | undefined): JalaliX {
 		return new JalaliX(this.toLocaleString(navigator.language ?? 'en', { timeZone: this.normalizeTimezone(timezone) }))
 	}
 
-	public addDays(date: number): JalaliX {
-		// Normalize date
-		this.normalizeDate(date)
+	public addYears(year: number): JalaliX {
+		let jDate = this.toJalali()
+
+		// Normalize Jalali
+		this.normalizeJalali(jDate, jDate.year + year, jDate.month, jDate.day)
 
 		// Reset
 		this.reset()
@@ -449,11 +510,19 @@ class JalaliX extends Date {
 		return this
 	}
 
-	public addYears(year: number): JalaliX {
-		let jDate = this.toJalali()
+	public addWeeks(date: number): JalaliX {
+		// Normalize date
+		this.normalizeDate(date * 7)
 
-		// Normalize Jalali
-		this.normalizeJalali(jDate, jDate.year + year, jDate.month, jDate.day)
+		// Reset
+		this.reset()
+
+		return this
+	}
+
+	public addDays(date: number): JalaliX {
+		// Normalize date
+		this.normalizeDate(date)
 
 		// Reset
 		this.reset()
@@ -478,12 +547,20 @@ class JalaliX extends Date {
 		// Week
 		if (output.match(/W/)) output = output.replace(/W/g, this.addZero(this.getWeekOfYear()))
 		if (output.match(/w/)) output = output.replace(/w/g, this.getWeekOfYear().toString())
-		if (output.match(/E/)) output = output.replace(/E/g, this.getDayISO().toString())
-		if (output.match(/e/)) output = output.replace(/e/g, this.getDay().toString())
 
-		// Day
+		// Day of Week
+		if (output.match(/DW/)) output = output.replace(/DW/g, this.getDayISO().toString())
+		if (output.match(/dw/)) output = output.replace(/dw/g, this.getDay().toString())
+		if (output.match(/WN/)) output = output.replace(/WN/g, this.getWeekDayName())
+		if (output.match(/wn/)) output = output.replace(/wn/g, this.getWeekDayName())
+		if (output.match(/WL/)) output = output.replace(/WL/g, this.getWeekDayLetter())
+		if (output.match(/wl/)) output = output.replace(/wl/g, this.getWeekDayLetter())
+
+		// Day of Year
 		if (output.match(/DDDD/)) output = output.replace(/DDDD/g, this.addZero(this.getDayOfYear()))
 		if (output.match(/DDD/)) output = output.replace(/DDD/g, this.getDayOfYear().toString())
+
+		// Day
 		if (output.match(/DD/)) output = output.replace(/DD/g, this.addZero(this.getDate()))
 		if (output.match(/D/)) output = output.replace(/D/g, this.getDate().toString())
 
