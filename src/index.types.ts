@@ -8,3 +8,5 @@ export type JalaliDate = {
 	ms: number
 	isLeapYear: boolean
 }
+
+export type JalaliOptions = { timezone: string }

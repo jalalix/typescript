@@ -2,6 +2,7 @@
 All notable changes to this package will be documented in this file.
 
 - Created `compare` function
+- Created `getTimezone` and `setTimezone` functions
 
 ## 0.4.3
 - Created `clone` function

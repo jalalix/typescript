@@ -1,5 +1,5 @@
 // Types
-import type { JalaliDate } from './index.types'
+import type { JalaliDate, JalaliOptions } from './index.types'
 
 class JalaliX extends Date {
 	private jalali: JalaliDate = {
@@ -24,7 +24,7 @@ class JalaliX extends Date {
 	private am = 'ق.ظ.'
 	private pm = 'ب.ظ.'
 
-	public toJalali(): JalaliDate {
+	private toJalali(): JalaliDate {
 		if (!this.isConverted) {
 			// Midnight, January 1, 1970 GMT.
 			const baseDate = new Date('1970-01-01')
@@ -184,7 +184,7 @@ class JalaliX extends Date {
 		return this.weekDaysNames[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
 
-	private getTimezone(): string {
+	private getUTCTimezone(): string {
 		const dateString = super.toString()
 		const timezoneMatch = dateString.match(/ GMT([0-9a-zA-Z\+\-\(\) ]+)/)
 
@@ -225,7 +225,7 @@ class JalaliX extends Date {
 
 		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)} ${jDate.hours}:${this.addZero(
 			jDate.min
-		)}:${this.addZero(jDate.sec)}${this.getTimezone()}`
+		)}:${this.addZero(jDate.sec)}${this.getUTCTimezone()}`
 	}
 
 	/** Returns a date as a string value. */
@@ -233,15 +233,6 @@ class JalaliX extends Date {
 		const jDate = this.toJalali()
 
 		return `${this.getJalaliWeekDay()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`
-	}
-
-	/** Returns a value as a string value appropriate to the host environment's current locale. */
-	public toLocaleString(): string {
-		const jDate = this.toJalali()
-
-		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)} ${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(
-			jDate.sec
-		)} ${this.getMeridiem()}`
 	}
 
 	/** Returns a date as a string value appropriate to the host environment's current locale. */
@@ -350,7 +341,11 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
-	public clone() {
+	public create(date: number | Date, options?: JalaliOptions): JalaliX {
+		return new JalaliX(date)
+	}
+
+	public clone(): JalaliX {
 		return new JalaliX(this.valueOf())
 	}
 
@@ -366,6 +361,10 @@ class JalaliX extends Date {
 
 	public static compare(date: JalaliX, comparing: JalaliX): boolean {
 		return date.getTime() < comparing.getTime()
+	}
+
+	public getTimezone(): string {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone
 	}
 
 	public getWeekOfYear(): number {
@@ -395,16 +394,20 @@ class JalaliX extends Date {
 		return ((this.getDay() + 6) % 7) + 1
 	}
 
-	public getHoursISO() {
+	public getHoursISO(): number {
 		const hours = this.getHours()
 
 		return hours > 12 ? hours - 12 : hours
 	}
 
-	public getMeridiem() {
+	public getMeridiem(): string {
 		const jDate = this.toJalali()
 
 		return jDate.hours > 12 ? this.pm : this.am
+	}
+
+	public setTimezone(timezone: string): JalaliX {
+		return new JalaliX(this.toLocaleString(undefined, { timeZone: timezone }))
 	}
 
 	public addDays(date: number): JalaliX {
