@@ -341,14 +341,6 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
-	public create(date: number | Date, options?: JalaliOptions): JalaliX {
-		return new JalaliX(date)
-	}
-
-	public clone(): JalaliX {
-		return new JalaliX(this.valueOf())
-	}
-
 	public static isValidDate(date: unknown): boolean {
 		return date instanceof Date && !isNaN(Number(date))
 	}
@@ -363,6 +355,19 @@ class JalaliX extends Date {
 		return date.getTime() < comparing.getTime()
 	}
 
+	public create(date: number | Date, options?: JalaliOptions): JalaliX {
+		const output = new JalaliX(date)
+
+		// Check Timezone
+		if (options?.timezone) output.setTimezone(options.timezone)
+
+		return output
+	}
+
+	public clone(): JalaliX {
+		return new JalaliX(this.valueOf())
+	}
+
 	public getTimezone(): string {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone
 	}
@@ -374,9 +379,9 @@ class JalaliX extends Date {
 		const d = new JalaliX(this.valueOf()).addDays(-1 * dayOfYear + 1)
 		const dayOfWeek = d.getDayISO()
 
-		let outout = Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
+		let output = Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
 
-		return outout
+		return output
 	}
 
 	public getDayOfYear(): number {

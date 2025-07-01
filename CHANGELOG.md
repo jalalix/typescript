@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Created `create` function
+
 ## 0.4.4
 - Created `compare` function
 - Created `getTimezone` and `setTimezone` functions
