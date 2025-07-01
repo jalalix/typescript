@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Added `string` type for **create** function
+
 ## 0.4.6
 - Added `options` for **create** function
 

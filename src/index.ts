@@ -341,7 +341,7 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
-	public static create(date: number | Date, options?: JalaliOptions): JalaliX {
+	public static create(date: number | string | Date, options?: JalaliOptions): JalaliX {
 		let output = new JalaliX(date)
 
 		// Check Timezone
