@@ -364,6 +364,22 @@ class JalaliX extends Date {
 		return str
 	}
 
+	public static compare(date: JalaliX, comparing: JalaliX): boolean {
+		return date.getTime() < comparing.getTime()
+	}
+
+	public getWeekOfYear(): number {
+		const dayOfYear = this.getDayOfYear()
+
+		// Find first day of year
+		const d = new JalaliX(this.valueOf()).addDays(-1 * dayOfYear + 1)
+		const dayOfWeek = d.getDayISO()
+
+		let outout = Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
+
+		return outout
+	}
+
 	public getDayOfYear(): number {
 		const jDate = this.toJalali()
 		let output = jDate.day
@@ -379,16 +395,16 @@ class JalaliX extends Date {
 		return ((this.getDay() + 6) % 7) + 1
 	}
 
-	public getWeekOfYear(): number {
-		const dayOfYear = this.getDayOfYear()
+	public getHoursISO() {
+		const hours = this.getHours()
 
-		// Find first day of year
-		const d = new JalaliX(this.valueOf()).addDays(-1 * dayOfYear + 1)
-		const dayOfWeek = d.getDayISO()
+		return hours > 12 ? hours - 12 : hours
+	}
 
-		let outout = Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
+	public getMeridiem() {
+		const jDate = this.toJalali()
 
-		return outout
+		return jDate.hours > 12 ? this.pm : this.am
 	}
 
 	public addDays(date: number): JalaliX {
@@ -425,12 +441,6 @@ class JalaliX extends Date {
 		return this
 	}
 
-	public getMeridiem() {
-		const jDate = this.toJalali()
-
-		return jDate.hours > 12 ? this.pm : this.am
-	}
-
 	public format(str: string): string {
 		let output = str
 
@@ -460,8 +470,8 @@ class JalaliX extends Date {
 		// Hours
 		if (output.match(/HH/)) output = output.replace(/HH/g, this.addZero(this.getHours()))
 		if (output.match(/H/)) output = output.replace(/H/g, this.getHours().toString())
-		if (output.match(/hh/)) output = output.replace(/hh/g, this.addZero(this.getHours() % 12))
-		if (output.match(/h/)) output = output.replace(/h/g, (this.getHours() % 12).toString())
+		if (output.match(/hh/)) output = output.replace(/hh/g, this.addZero(this.getHoursISO()))
+		if (output.match(/h/)) output = output.replace(/h/g, this.getHoursISO().toString())
 
 		// Minutes
 		if (output.match(/mm/)) output = output.replace(/mm/g, this.addZero(this.getMinutes()))
