@@ -341,6 +341,15 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
+	public static create(date: number | Date, options?: JalaliOptions): JalaliX {
+		let output = new JalaliX(date)
+
+		// Check Timezone
+		if (options?.timezone) output = output.setTimezone(options.timezone)
+
+		return output
+	}
+
 	public static isValidDate(date: unknown): boolean {
 		return date instanceof Date && !isNaN(Number(date))
 	}
@@ -353,15 +362,6 @@ class JalaliX extends Date {
 
 	public static compare(date: JalaliX, comparing: JalaliX): boolean {
 		return date.getTime() < comparing.getTime()
-	}
-
-	public create(date: number | Date, options?: JalaliOptions): JalaliX {
-		const output = new JalaliX(date)
-
-		// Check Timezone
-		if (options?.timezone) output.setTimezone(options.timezone)
-
-		return output
 	}
 
 	public clone(): JalaliX {

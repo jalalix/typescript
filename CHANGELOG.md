@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Added `options` for **create** function
+
 ## 0.4.5
 - Created `create` function
 
