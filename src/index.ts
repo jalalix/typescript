@@ -20,6 +20,7 @@ class JalaliX extends Date {
 	private weekDaysNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
 	private weekDaysLetters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
 	private monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+	private monthsGregorianNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 	static persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
 	private am = 'ق.ظ.'
 	private pm = 'ب.ظ.'
@@ -180,6 +181,10 @@ class JalaliX extends Date {
 		return this.monthsNames[number - 1]
 	}
 
+	private getGregorianMonth(number: number): string {
+		return this.monthsGregorianNames[number - 1]
+	}
+
 	private getWeekDayName(): string {
 		return this.weekDaysNames[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
@@ -289,6 +294,78 @@ class JalaliX extends Date {
 	/** Gets the day of the week, using local time. */
 	public getDay(): number {
 		return (super.getDay() - this.firstDayOfWeek + 7 + 1) % 7
+	}
+
+	/**
+	 * Sets the date and time value in the Date object.
+	 * @param time A numeric value representing the number of elapsed milliseconds since midnight, January 1, 1970 GMT.
+	 */
+	public setTime(time: number): number {
+		super.setTime(time)
+
+		// Reset
+		this.reset()
+
+		return this.getTime()
+	}
+
+	/**
+	 * Sets the milliseconds value in the Date object using local time.
+	 * @param ms A numeric value equal to the millisecond value.
+	 */
+	public setMilliseconds(ms: number): number {
+		super.setMilliseconds(ms)
+		this.jalali.ms = ms
+
+		return this.getTime()
+	}
+
+	/**
+	 * Sets the seconds value in the Date object using local time.
+	 * @param sec A numeric value equal to the seconds value.
+	 * @param ms A numeric value equal to the milliseconds value.
+	 */
+	public setSeconds(sec: number, ms?: number): number {
+		super.setSeconds(sec, ms)
+		this.jalali.sec = sec
+
+		if (ms) this.jalali.ms = ms
+
+		return this.getTime()
+	}
+
+	/**
+	 * Sets the minutes value in the Date object using local time.
+	 * @param min A numeric value equal to the minutes value.
+	 * @param sec A numeric value equal to the seconds value.
+	 * @param ms A numeric value equal to the milliseconds value.
+	 */
+	public setMinutes(min: number, sec?: number, ms?: number): number {
+		super.setMinutes(min, sec, ms)
+		this.jalali.min = min
+
+		if (sec) this.jalali.sec = sec
+		if (ms) this.jalali.ms = ms
+
+		return this.getTime()
+	}
+
+	/**
+	 * Sets the hour value in the Date object using local time.
+	 * @param hours A numeric value equal to the hours value.
+	 * @param min A numeric value equal to the minutes value.
+	 * @param sec A numeric value equal to the seconds value.
+	 * @param ms A numeric value equal to the milliseconds value.
+	 */
+	public setHours(hours: number, min?: number, sec?: number, ms?: number): number {
+		super.setHours(hours, min, sec, ms)
+		this.jalali.hours = hours
+
+		if (min) this.jalali.min = min
+		if (sec) this.jalali.sec = sec
+		if (ms) this.jalali.ms = ms
+
+		return this.getTime()
 	}
 
 	/**
@@ -436,10 +513,6 @@ class JalaliX extends Date {
 
 	public getStartOfDay(): JalaliX {
 		this.setHours(0, 0, 0, 0)
-		this.jalali.hours = 0
-		this.jalali.min = 0
-		this.jalali.sec = 0
-		this.jalali.ms = 0
 
 		return this
 	}
@@ -474,10 +547,6 @@ class JalaliX extends Date {
 
 	public getEndOfDay(): JalaliX {
 		this.setHours(23, 59, 59, 999)
-		this.jalali.hours = 23
-		this.jalali.min = 59
-		this.jalali.sec = 59
-		this.jalali.ms = 999
 
 		return this
 	}
