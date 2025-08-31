@@ -2,6 +2,7 @@
 All notable changes to this package will be documented in this file.
 
 - Created `setTime`, `setMilliseconds`, `setSeconds`, `setMinutes`, `setHours` functions
+- Upgraded to **typescript** 5.9.2
 
 ## 0.5.0
 - Created **start** and **end** functions
