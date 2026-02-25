@@ -29,6 +29,10 @@ class JalaliX extends Date {
 	private amGregorian = 'AM'
 	private pmGregorian = 'PM'
 
+	/**
+	 * Converts the current Date to Jalali (Persian) calendar date.
+	 * @returns The Jalali date object with year, month, day, hours, minutes, seconds, milliseconds, and isLeapYear.
+	 */
 	private toJalali(): JalaliDate {
 		if (!this.isConverted) {
 			// Midnight, January 1, 1970 GMT.
@@ -88,6 +92,11 @@ class JalaliX extends Date {
 		return this.jalali
 	}
 
+	/**
+	 * Converts a Jalali date to Gregorian timestamp.
+	 * @param jDate - The Jalali date object to convert.
+	 * @returns The timestamp in milliseconds.
+	 */
 	private toGregorian(jDate: JalaliDate): number {
 		const jalali = {
 			year: 1348,
@@ -159,6 +168,11 @@ class JalaliX extends Date {
 		return outputTime
 	}
 
+	/**
+	 * Checks if the given Jalali year is a leap year.
+	 * @param year - The Jalali year to check.
+	 * @returns True if the year is a leap year, false otherwise.
+	 */
 	private checkLeapYear(year: number): boolean {
 		if (year > 0) {
 			const checkYear: number = (year + 2346) * this.leapYearDivision
@@ -168,6 +182,10 @@ class JalaliX extends Date {
 		return false
 	}
 
+	/**
+	 * Resets the Jalali conversion state and recalculates from the base date.
+	 * @returns The recalculated Jalali date.
+	 */
 	private reset(): JalaliDate {
 		this.isConverted = false
 		this.jalali.year = 1348
@@ -177,24 +195,47 @@ class JalaliX extends Date {
 		return this.toJalali()
 	}
 
+	/**
+	 * Pads a number with leading zero if it's a single digit.
+	 * @param number - The number to pad.
+	 * @returns The padded string (e.g., "05" for 5).
+	 */
 	private addZero(number: number): string {
 		return `${number > -1 && number < 10 ? '0' : ''}${number}`
 	}
 
+	/**
+	 * Returns the Persian name of a Jalali month.
+	 * @param number - The month number (1-12).
+	 * @returns The Persian month name (e.g., "فروردین").
+	 */
 	private getJalaliMonth(number: number): string {
 		return this.monthsNames[number - 1]
 	}
 
+	/**
+	 * Returns the English name of a Gregorian month.
+	 * @param number - The month number (1-12).
+	 * @returns The English month name (e.g., "January").
+	 */
 	private getGregorianMonth(number: number): string {
 		return this.monthsGregorianNames[number - 1]
 	}
 
+	/**
+	 * Returns the day of the year (1-366) in Gregorian calendar.
+	 * @returns The day of the year.
+	 */
 	private getGregorianDayOfYear(): number {
 		const start = new Date(super.getFullYear(), 0, 0).getTime()
 
 		return Math.ceil((this.getTime() - start) / this.dateLength)
 	}
 
+	/**
+	 * Returns the ISO week number of the year in Gregorian calendar.
+	 * @returns The week number (1-53).
+	 */
 	private getGregorianWeekOfYear(): number {
 		const d = new Date(Date.UTC(super.getFullYear(), super.getMonth(), super.getDate()))
 		d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
@@ -203,22 +244,42 @@ class JalaliX extends Date {
 		return Math.ceil(((d.getTime() - yearStart.getTime()) / this.dateLength + 1) / 7)
 	}
 
+	/**
+	 * Returns the English name of the day of the week.
+	 * @returns The day name (e.g., "Monday").
+	 */
 	private getGregorianWeekDayName(): string {
 		return this.weekDaysGregorianNames[super.getDay()]
 	}
 
+	/**
+	 * Returns the first letter of the day of the week in English.
+	 * @returns The day letter (e.g., "M" for Monday).
+	 */
 	private getGregorianWeekDayLetter(): string {
 		return this.weekDaysGregorianLetters[super.getDay()]
 	}
 
+	/**
+	 * Returns the Persian name of the day of the week.
+	 * @returns The Persian day name (e.g., "شنبه").
+	 */
 	private getWeekDayName(): string {
 		return this.weekDaysNames[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
 
+	/**
+	 * Returns the first letter of the day of the week in Persian.
+	 * @returns The Persian day letter (e.g., "ش" for شنبه).
+	 */
 	private getWeekDayLetter(): string {
 		return this.weekDaysLetters[(this.getDay() + this.firstDayOfWeek) % 7]
 	}
 
+	/**
+	 * Extracts and returns the UTC timezone string from the Date.
+	 * @returns The timezone string (e.g., " GMT+0330").
+	 */
 	private getUTCTimezone(): string {
 		const dateString = super.toString()
 		const timezoneMatch = dateString.match(/ GMT([0-9a-zA-Z\+\-\(\) ]+)/)
@@ -226,10 +287,23 @@ class JalaliX extends Date {
 		return `${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`
 	}
 
+	/**
+	 * Adjusts the date by adding the specified number of days.
+	 * @param date - The number of days to add (can be negative).
+	 * @returns The result of setDate.
+	 */
 	private normalizeDate(date: number): number {
 		return super.setDate(super.getDate() + date)
 	}
 
+	/**
+	 * Normalizes Jalali date components and sets the internal Date accordingly.
+	 * @param jDate - The current Jalali date object.
+	 * @param year - The target year.
+	 * @param month - The target month (1-12).
+	 * @param day - The target day of month.
+	 * @returns The result of setTime.
+	 */
 	private normalizeJalali(jDate: JalaliDate, year: number, month: number, day: number): number {
 		// Normalize month
 		if (month < 1) {
@@ -254,6 +328,11 @@ class JalaliX extends Date {
 		return super.setTime(this.toGregorian({ ...jDate, ...{ year, month, day } }))
 	}
 
+	/**
+	 * Normalizes timezone string to a standard format.
+	 * @param timezone - The timezone string (e.g., "UTC", "local", "Asia/Tehran").
+	 * @returns The normalized timezone string.
+	 */
 	private normalizeTimezone(timezone: string | undefined): string {
 		if (timezone === undefined || timezone === null) return this.getTimezone()
 		else {
@@ -266,7 +345,10 @@ class JalaliX extends Date {
 		}
 	}
 
-	/** Returns a string representation of a date. The format of the string depends on the locale. */
+	/**
+	 * Returns a string representation of a date in Jalali format.
+	 * @returns Full date string with weekday, day, month, year, and time.
+	 */
 	public toString(): string {
 		const jDate = this.toJalali()
 
@@ -275,49 +357,70 @@ class JalaliX extends Date {
 		)}:${this.addZero(jDate.sec)}${this.getUTCTimezone()}`
 	}
 
-	/** Returns a date as a string value. */
+	/**
+	 * Returns a date as a string value (without time).
+	 * @returns Date string with weekday, day, month, and year.
+	 */
 	public toDateString(): string {
 		const jDate = this.toJalali()
 
 		return `${this.getWeekDayName()} ${this.addZero(jDate.day)} ${this.getJalaliMonth(jDate.month)} ${this.addZero(jDate.year)}`
 	}
 
-	/** Returns a date as a string value appropriate to the host environment's current locale. */
+	/**
+	 * Returns a date as a string value in locale format (YYYY/MM/DD).
+	 * @returns Locale-formatted date string.
+	 */
 	public toLocaleDateString(): string {
 		const jDate = this.toJalali()
 
 		return `${this.addZero(jDate.year)}/${this.addZero(jDate.month)}/${this.addZero(jDate.day)}`
 	}
 
-	/** Returns a time as a string value appropriate to the host environment's current locale. */
+	/**
+	 * Returns a time as a string value with meridiem.
+	 * @returns Time string (e.g., "10:30:45 ق.ظ.").
+	 */
 	public toLocaleTimeString(): string {
 		const jDate = this.toJalali()
 
 		return `${jDate.hours % 12}:${this.addZero(jDate.min)}:${this.addZero(jDate.sec)} ${this.getMeridiem()}`
 	}
 
-	/** Gets the year, using local time. */
+	/**
+	 * Gets the Jalali year.
+	 * @returns The year (e.g., 1403).
+	 */
 	public getFullYear(): number {
 		const jDate = this.toJalali()
 
 		return jDate.year
 	}
 
-	/** Gets the month, using local time. */
+	/**
+	 * Gets the Jalali month (1-12).
+	 * @returns The month number.
+	 */
 	public getMonth(): number {
 		const jDate = this.toJalali()
 
 		return jDate.month
 	}
 
-	/** Gets the day-of-the-month, using local time. */
+	/**
+	 * Gets the day of the month in Jalali calendar (1-31).
+	 * @returns The day of the month.
+	 */
 	public getDate(): number {
 		const jDate = this.toJalali()
 
 		return jDate.day
 	}
 
-	/** Gets the day of the week, using local time. */
+	/**
+	 * Gets the day of the week (1=Saturday, 7=Friday in Jalali).
+	 * @returns The day number (1-7).
+	 */
 	public getDay(): number {
 		return (super.getDay() - this.firstDayOfWeek + 7 + 1) % 7
 	}
@@ -460,6 +563,12 @@ class JalaliX extends Date {
 		return this.getTime()
 	}
 
+	/**
+	 * Creates a JalaliX instance from a date value.
+	 * @param date - The date value (timestamp, ISO string, or Date object).
+	 * @param options - Optional configuration including timezone.
+	 * @returns A new JalaliX instance.
+	 */
 	public static create(date: number | string | Date, options?: JalaliOptions): JalaliX {
 		let output = new JalaliX(date)
 
@@ -469,28 +578,56 @@ class JalaliX extends Date {
 		return output
 	}
 
+	/**
+	 * Checks if the given value is a valid Date.
+	 * @param date - The value to check.
+	 * @returns True if valid Date, false otherwise.
+	 */
 	public static isValidDate(date: unknown): boolean {
 		return date instanceof Date && !isNaN(Number(date))
 	}
 
+	/**
+	 * Converts Western numerals (0-9) to Persian numerals (۰-۹) in a string.
+	 * @param str - The string containing numerals to convert.
+	 * @returns The string with Persian numerals.
+	 */
 	public static toPersian(str: string): string {
 		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
 
 		return str
 	}
 
+	/**
+	 * Compares two JalaliX dates.
+	 * @param date - The first date to compare.
+	 * @param comparing - The second date to compare against.
+	 * @returns True if date is before comparing, false otherwise.
+	 */
 	public static compare(date: JalaliX, comparing: JalaliX): boolean {
 		return date.getTime() < comparing.getTime()
 	}
 
+	/**
+	 * Creates a copy of this JalaliX instance.
+	 * @returns A new JalaliX instance with the same timestamp.
+	 */
 	public clone(): JalaliX {
 		return new JalaliX(this.valueOf())
 	}
 
+	/**
+	 * Gets the timezone of the system.
+	 * @returns The IANA timezone string (e.g., "Asia/Tehran").
+	 */
 	public getTimezone(): string {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone
 	}
 
+	/**
+	 * Gets the week number of the year in Jalali calendar.
+	 * @returns The week number (1-53).
+	 */
 	public getWeekOfYear(): number {
 		const dayOfYear = this.getDayOfYear()
 		const dayOfWeek = new JalaliX(this.valueOf()).getStartOfYear().getDayISO()
@@ -498,6 +635,10 @@ class JalaliX extends Date {
 		return Math.ceil((dayOfYear + dayOfWeek - 1) / 7)
 	}
 
+	/**
+	 * Gets the day of the year in Jalali calendar (1-366).
+	 * @returns The day of the year.
+	 */
 	public getDayOfYear(): number {
 		const jDate = this.toJalali()
 		let output = jDate.day
@@ -509,46 +650,82 @@ class JalaliX extends Date {
 		return output
 	}
 
+	/**
+	 * Gets the ISO day of the week (1=Monday, 7=Sunday).
+	 * @returns The ISO day number (1-7).
+	 */
 	public getDayISO(): number {
 		return ((this.getDay() + 6) % 7) + 1
 	}
 
+	/**
+	 * Gets the hour in 12-hour format (1-12).
+	 * @returns The hour in 12-hour format.
+	 */
 	public getHoursISO(): number {
 		const hours = this.getHours()
 
 		return hours > 12 ? hours - 12 : hours
 	}
 
+	/**
+	 * Gets the meridiem (AM/PM) in Persian.
+	 * @returns "ق.ظ." (before noon) or "ب.ظ." (after noon).
+	 */
 	public getMeridiem(): string {
 		const jDate = this.toJalali()
 
 		return jDate.hours > 12 ? this.pm : this.am
 	}
 
+	/**
+	 * Returns AM or PM based on the hour in 12-hour format.
+	 * @returns "AM" or "PM".
+	 */
 	private getGregorianMeridiem(): string {
 		const hours = super.getHours()
 
 		return hours >= 12 ? this.pmGregorian : this.amGregorian
 	}
 
+	/**
+	 * Returns a new JalaliX set to the start of the Jalali year.
+	 * @returns This instance modified to the first moment of the year.
+	 */
 	public getStartOfYear(): JalaliX {
 		return this.addDays(-1 * this.getDayOfYear() + 1).getStartOfDay()
 	}
 
+	/**
+	 * Returns a new JalaliX set to the start of the current month.
+	 * @returns This instance modified to the first moment of the month.
+	 */
 	public getStartOfMonth(): JalaliX {
 		return this.addDays(-1 * this.getDate() + 1).getStartOfDay()
 	}
 
+	/**
+	 * Returns a new JalaliX set to the start of the current week (Monday).
+	 * @returns This instance modified to the first moment of the week.
+	 */
 	public getStartOfWeek(): JalaliX {
 		return this.addDays(-1 * this.getDayISO() + 1).getStartOfDay()
 	}
 
+	/**
+	 * Returns a new JalaliX set to the start of the current day (00:00:00.000).
+	 * @returns This instance modified to midnight.
+	 */
 	public getStartOfDay(): JalaliX {
 		this.setHours(0, 0, 0, 0)
 
 		return this
 	}
 
+	/**
+	 * Returns a new JalaliX set to the end of the Jalali year (23:59:59.999).
+	 * @returns This instance modified to the last moment of the year.
+	 */
 	public getEndOfYear(): JalaliX {
 		const jDate = this.toJalali()
 
@@ -558,6 +735,10 @@ class JalaliX extends Date {
 		return this.addDays(lastDay - this.getDayOfYear()).getEndOfDay()
 	}
 
+	/**
+	 * Returns a new JalaliX set to the end of the current month.
+	 * @returns This instance modified to the last moment of the month.
+	 */
 	public getEndOfMonth(): JalaliX {
 		const jDate = this.toJalali()
 
@@ -573,20 +754,38 @@ class JalaliX extends Date {
 		return this.addDays(lastDay - this.getDate()).getEndOfDay()
 	}
 
+	/**
+	 * Returns a new JalaliX set to the end of the current week (Sunday).
+	 * @returns This instance modified to the last moment of the week.
+	 */
 	public getEndOfWeek(): JalaliX {
 		return this.addDays(7 - this.getDayISO()).getEndOfDay()
 	}
 
+	/**
+	 * Returns a new JalaliX set to the end of the current day (23:59:59.999).
+	 * @returns This instance modified to the last moment of the day.
+	 */
 	public getEndOfDay(): JalaliX {
 		this.setHours(23, 59, 59, 999)
 
 		return this
 	}
 
+	/**
+	 * Creates a new JalaliX instance with the specified timezone.
+	 * @param timezone - The timezone string (e.g., "UTC", "Asia/Tehran").
+	 * @returns A new JalaliX instance in the specified timezone.
+	 */
 	public setTimezone(timezone: string | undefined): JalaliX {
 		return new JalaliX(this.toLocaleString(navigator.language ?? 'en', { timeZone: this.normalizeTimezone(timezone) }))
 	}
 
+	/**
+	 * Adds the specified number of years to the date.
+	 * @param year - The number of years to add (can be negative).
+	 * @returns This instance modified.
+	 */
 	public addYears(year: number): JalaliX {
 		let jDate = this.toJalali()
 
@@ -599,6 +798,11 @@ class JalaliX extends Date {
 		return this
 	}
 
+	/**
+	 * Adds the specified number of months to the date.
+	 * @param month - The number of months to add (can be negative).
+	 * @returns This instance modified.
+	 */
 	public addMonths(month: number): JalaliX {
 		let jDate = this.toJalali()
 
@@ -611,6 +815,11 @@ class JalaliX extends Date {
 		return this
 	}
 
+	/**
+	 * Adds the specified number of weeks to the date.
+	 * @param date - The number of weeks to add (can be negative).
+	 * @returns This instance modified.
+	 */
 	public addWeeks(date: number): JalaliX {
 		// Normalize date
 		this.normalizeDate(date * 7)
@@ -621,6 +830,11 @@ class JalaliX extends Date {
 		return this
 	}
 
+	/**
+	 * Adds the specified number of days to the date.
+	 * @param date - The number of days to add (can be negative).
+	 * @returns This instance modified.
+	 */
 	public addDays(date: number): JalaliX {
 		// Normalize date
 		this.normalizeDate(date)
@@ -631,6 +845,12 @@ class JalaliX extends Date {
 		return this
 	}
 
+	/**
+	 * Formats the date according to the specified format string.
+	 * @param str - The format string (e.g., "YYYY/MM/DD", "DD MMM YYYY").
+	 * @param gregorian - If true, uses Gregorian calendar; otherwise uses Jalali.
+	 * @returns The formatted date string.
+	 */
 	public format(str: string, gregorian?: boolean): string {
 		let output = str
 

@@ -2,6 +2,7 @@
 All notable changes to this package will be documented in this file.
 
 - Added Gregorian calendar support to `format` function via optional second parameter
+- Added JSDoc comments to all functions including parameters and return types
 
 ## 0.5.1
 - Created `setTime`, `setMilliseconds`, `setSeconds`, `setMinutes`, `setHours` functions
