@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Fixed `format` token replacement conflict bug
+
 ## 0.6.0
 - Added Gregorian calendar support to `format` function via optional second parameter
 - Added JSDoc comments to all functions including parameters and return types

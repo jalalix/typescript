@@ -852,6 +852,18 @@ class JalaliX extends Date {
 	 * @returns The formatted date string.
 	 */
 	public format(str: string, gregorian?: boolean): string {
+		// Initialize placeholders
+		const placeholders: string[] = []
+
+		// Add placeholder
+		const ph = (val: string): string => {
+			const i = placeholders.length
+			placeholders.push(val)
+
+			return `\uE000${i}\uE001`
+		}
+
+		// Initialize output
 		let output = str
 
 		const year = gregorian ? super.getFullYear() : this.getFullYear()
@@ -863,67 +875,73 @@ class JalaliX extends Date {
 		const weekDayName = gregorian ? this.getGregorianWeekDayName() : this.getWeekDayName()
 		const weekDayLetter = gregorian ? this.getGregorianWeekDayLetter() : this.getWeekDayLetter()
 		const meridiem = gregorian ? this.getGregorianMeridiem() : this.getMeridiem()
-
 		const yearStr = year.toString()
 
 		// Year
-		if (output.match(/YYYY/)) output = output.replace(/YYYY/g, yearStr)
-		if (output.match(/YYY/)) output = output.replace(/YYY/g, yearStr.slice(-3))
-		if (output.match(/YY/)) output = output.replace(/YY/g, yearStr.slice(-2))
-		if (output.match(/Y/)) output = output.replace(/Y/g, yearStr.slice(-1))
+		if (output.match(/YYYY/)) output = output.replace(/YYYY/g, () => ph(yearStr))
+		if (output.match(/YYY/)) output = output.replace(/YYY/g, () => ph(yearStr.slice(-3)))
+		if (output.match(/YY/)) output = output.replace(/YY/g, () => ph(yearStr.slice(-2)))
+		if (output.match(/Y/)) output = output.replace(/Y/g, () => ph(yearStr.slice(-1)))
 
 		// Month
-		if (output.match(/MMM/)) output = output.replace(/MMM/g, monthName)
-		if (output.match(/MM/)) output = output.replace(/MM/g, this.addZero(month))
-		if (output.match(/M/)) output = output.replace(/M/g, month.toString())
+		if (output.match(/MMM/)) output = output.replace(/MMM/g, () => ph(monthName))
+		if (output.match(/MM/)) output = output.replace(/MM/g, () => ph(this.addZero(month)))
+		if (output.match(/M/)) output = output.replace(/M/g, () => ph(month.toString()))
 
 		// Week
-		if (output.match(/W/)) output = output.replace(/W/g, this.addZero(weekOfYear))
-		if (output.match(/w/)) output = output.replace(/w/g, weekOfYear.toString())
+		if (output.match(/W/)) output = output.replace(/W/g, () => ph(this.addZero(weekOfYear)))
+		if (output.match(/w/)) output = output.replace(/w/g, () => ph(weekOfYear.toString()))
 
 		// Day of Week
-		if (output.match(/DW/)) output = output.replace(/DW/g, this.getDayISO().toString())
-		if (output.match(/dw/)) output = output.replace(/dw/g, (gregorian ? super.getDay() || 7 : this.getDay()).toString())
-		if (output.match(/WN/)) output = output.replace(/WN/g, weekDayName)
-		if (output.match(/wn/)) output = output.replace(/wn/g, weekDayName)
-		if (output.match(/WL/)) output = output.replace(/WL/g, weekDayLetter)
-		if (output.match(/wl/)) output = output.replace(/wl/g, weekDayLetter)
+		if (output.match(/DW/)) output = output.replace(/DW/g, () => ph(this.getDayISO().toString()))
+		if (output.match(/dw/)) output = output.replace(/dw/g, () => ph((gregorian ? super.getDay() || 7 : this.getDay()).toString()))
+		if (output.match(/WN/)) output = output.replace(/WN/g, () => ph(weekDayName))
+		if (output.match(/wn/)) output = output.replace(/wn/g, () => ph(weekDayName))
+		if (output.match(/WL/)) output = output.replace(/WL/g, () => ph(weekDayLetter))
+		if (output.match(/wl/)) output = output.replace(/wl/g, () => ph(weekDayLetter))
 
 		// Day of Year
-		if (output.match(/DDDD/)) output = output.replace(/DDDD/g, this.addZero(dayOfYear))
-		if (output.match(/DDD/)) output = output.replace(/DDD/g, dayOfYear.toString())
+		if (output.match(/DDDD/)) output = output.replace(/DDDD/g, () => ph(this.addZero(dayOfYear)))
+		if (output.match(/DDD/)) output = output.replace(/DDD/g, () => ph(dayOfYear.toString()))
 
 		// Day
-		if (output.match(/DD/)) output = output.replace(/DD/g, this.addZero(date))
-		if (output.match(/D/)) output = output.replace(/D/g, date.toString())
+		if (output.match(/DD/)) output = output.replace(/DD/g, () => ph(this.addZero(date)))
+		if (output.match(/D/)) output = output.replace(/D/g, () => ph(date.toString()))
 
 		// Hours
 		const hours = super.getHours()
-		if (output.match(/HH/)) output = output.replace(/HH/g, this.addZero(hours))
-		if (output.match(/H/)) output = output.replace(/H/g, hours.toString())
+		if (output.match(/HH/)) output = output.replace(/HH/g, () => ph(this.addZero(hours)))
+		if (output.match(/H/)) output = output.replace(/H/g, () => ph(hours.toString()))
+
+		// Hours ISO
 		const hoursISO = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
-		if (output.match(/hh/)) output = output.replace(/hh/g, this.addZero(hoursISO))
-		if (output.match(/h/)) output = output.replace(/h/g, hoursISO.toString())
+		if (output.match(/hh/)) output = output.replace(/hh/g, () => ph(this.addZero(hoursISO)))
+		if (output.match(/h/)) output = output.replace(/h/g, () => ph(hoursISO.toString()))
 
 		// Minutes
-		if (output.match(/mm/)) output = output.replace(/mm/g, this.addZero(this.getMinutes()))
-		if (output.match(/m/)) output = output.replace(/m/g, this.getMinutes().toString())
+		if (output.match(/mm/)) output = output.replace(/mm/g, () => ph(this.addZero(this.getMinutes())))
+		if (output.match(/m/)) output = output.replace(/m/g, () => ph(this.getMinutes().toString()))
 
 		// Seconds
-		if (output.match(/ss/)) output = output.replace(/ss/g, this.addZero(this.getSeconds()))
-		if (output.match(/s/)) output = output.replace(/s/g, this.getSeconds().toString())
+		if (output.match(/ss/)) output = output.replace(/ss/g, () => ph(this.addZero(this.getSeconds())))
+		if (output.match(/s/)) output = output.replace(/s/g, () => ph(this.getSeconds().toString()))
 
 		// Milliseconds
-		if (output.match(/sss/)) output = output.replace(/sss/g, this.getMilliseconds().toString())
-		if (output.match(/SSS/)) output = output.replace(/SSS/g, this.getMilliseconds().toString())
+		if (output.match(/sss/)) output = output.replace(/sss/g, () => ph(this.getMilliseconds().toString()))
+		if (output.match(/SSS/)) output = output.replace(/SSS/g, () => ph(this.getMilliseconds().toString()))
 
 		// Meridiem
-		if (output.match(/A/)) output = output.replace(/A/g, meridiem)
-		if (output.match(/a/)) output = output.replace(/a/g, meridiem)
+		if (output.match(/A/)) output = output.replace(/A/g, () => ph(meridiem))
+		if (output.match(/a/)) output = output.replace(/a/g, () => ph(meridiem))
 
 		// Unix Timestamp
-		if (output.match(/X/)) output = output.replace(/X/g, Math.floor(this.getTime() / 1000).toString())
-		if (output.match(/x/)) output = output.replace(/x/g, this.getTime().toString())
+		if (output.match(/X/)) output = output.replace(/X/g, () => ph(Math.floor(this.getTime() / 1000).toString()))
+		if (output.match(/x/)) output = output.replace(/x/g, () => ph(this.getTime().toString()))
+
+		// Replace placeholders with actual values
+		placeholders.forEach((val, i) => {
+			output = output.replace(new RegExp(`\uE000${i}\uE001`, 'g'), () => val)
+		})
 
 		return output
 	}
