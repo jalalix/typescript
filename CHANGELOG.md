@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+## 0.6.1
 - Fixed `format` token replacement conflict bug
 
 ## 0.6.0
