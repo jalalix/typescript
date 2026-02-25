@@ -1,6 +1,8 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Added Gregorian calendar support to `format` function via optional second parameter
+
 ## 0.5.1
 - Created `setTime`, `setMilliseconds`, `setSeconds`, `setMinutes`, `setHours` functions
 - Upgraded to **typescript** 5.9.2

@@ -19,11 +19,15 @@ class JalaliX extends Date {
 	private dateLength = 86400000
 	private weekDaysNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه']
 	private weekDaysLetters = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+	private weekDaysGregorianNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+	private weekDaysGregorianLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 	private monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 	private monthsGregorianNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 	static persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
 	private am = 'ق.ظ.'
 	private pm = 'ب.ظ.'
+	private amGregorian = 'AM'
+	private pmGregorian = 'PM'
 
 	private toJalali(): JalaliDate {
 		if (!this.isConverted) {
@@ -183,6 +187,28 @@ class JalaliX extends Date {
 
 	private getGregorianMonth(number: number): string {
 		return this.monthsGregorianNames[number - 1]
+	}
+
+	private getGregorianDayOfYear(): number {
+		const start = new Date(super.getFullYear(), 0, 0).getTime()
+
+		return Math.ceil((this.getTime() - start) / this.dateLength)
+	}
+
+	private getGregorianWeekOfYear(): number {
+		const d = new Date(Date.UTC(super.getFullYear(), super.getMonth(), super.getDate()))
+		d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
+		const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+
+		return Math.ceil(((d.getTime() - yearStart.getTime()) / this.dateLength + 1) / 7)
+	}
+
+	private getGregorianWeekDayName(): string {
+		return this.weekDaysGregorianNames[super.getDay()]
+	}
+
+	private getGregorianWeekDayLetter(): string {
+		return this.weekDaysGregorianLetters[super.getDay()]
 	}
 
 	private getWeekDayName(): string {
@@ -499,6 +525,12 @@ class JalaliX extends Date {
 		return jDate.hours > 12 ? this.pm : this.am
 	}
 
+	private getGregorianMeridiem(): string {
+		const hours = super.getHours()
+
+		return hours >= 12 ? this.pmGregorian : this.amGregorian
+	}
+
 	public getStartOfYear(): JalaliX {
 		return this.addDays(-1 * this.getDayOfYear() + 1).getStartOfDay()
 	}
@@ -599,45 +631,59 @@ class JalaliX extends Date {
 		return this
 	}
 
-	public format(str: string): string {
+	public format(str: string, gregorian?: boolean): string {
 		let output = str
 
+		const year = gregorian ? super.getFullYear() : this.getFullYear()
+		const month = gregorian ? super.getMonth() + 1 : this.getMonth()
+		const weekOfYear = gregorian ? this.getGregorianWeekOfYear() : this.getWeekOfYear()
+		const dayOfYear = gregorian ? this.getGregorianDayOfYear() : this.getDayOfYear()
+		const date = gregorian ? super.getDate() : this.getDate()
+		const monthName = gregorian ? this.getGregorianMonth(month) : this.getJalaliMonth(month)
+		const weekDayName = gregorian ? this.getGregorianWeekDayName() : this.getWeekDayName()
+		const weekDayLetter = gregorian ? this.getGregorianWeekDayLetter() : this.getWeekDayLetter()
+		const meridiem = gregorian ? this.getGregorianMeridiem() : this.getMeridiem()
+
+		const yearStr = year.toString()
+
 		// Year
-		if (output.match(/YYYY/)) output = output.replace(/YYYY/g, this.getFullYear().toString())
-		if (output.match(/YYY/)) output = output.replace(/YYY/g, this.getFullYear().toString().substring(1, 4))
-		if (output.match(/YY/)) output = output.replace(/YY/g, this.getFullYear().toString().substring(2, 4))
-		if (output.match(/Y/)) output = output.replace(/Y/g, this.getFullYear().toString().substring(3, 4))
+		if (output.match(/YYYY/)) output = output.replace(/YYYY/g, yearStr)
+		if (output.match(/YYY/)) output = output.replace(/YYY/g, yearStr.slice(-3))
+		if (output.match(/YY/)) output = output.replace(/YY/g, yearStr.slice(-2))
+		if (output.match(/Y/)) output = output.replace(/Y/g, yearStr.slice(-1))
 
 		// Month
-		if (output.match(/MMM/)) output = output.replace(/MMM/g, this.getJalaliMonth(this.getMonth()))
-		if (output.match(/MM/)) output = output.replace(/MM/g, this.addZero(this.getMonth()))
-		if (output.match(/M/)) output = output.replace(/M/g, this.getMonth().toString())
+		if (output.match(/MMM/)) output = output.replace(/MMM/g, monthName)
+		if (output.match(/MM/)) output = output.replace(/MM/g, this.addZero(month))
+		if (output.match(/M/)) output = output.replace(/M/g, month.toString())
 
 		// Week
-		if (output.match(/W/)) output = output.replace(/W/g, this.addZero(this.getWeekOfYear()))
-		if (output.match(/w/)) output = output.replace(/w/g, this.getWeekOfYear().toString())
+		if (output.match(/W/)) output = output.replace(/W/g, this.addZero(weekOfYear))
+		if (output.match(/w/)) output = output.replace(/w/g, weekOfYear.toString())
 
 		// Day of Week
 		if (output.match(/DW/)) output = output.replace(/DW/g, this.getDayISO().toString())
-		if (output.match(/dw/)) output = output.replace(/dw/g, this.getDay().toString())
-		if (output.match(/WN/)) output = output.replace(/WN/g, this.getWeekDayName())
-		if (output.match(/wn/)) output = output.replace(/wn/g, this.getWeekDayName())
-		if (output.match(/WL/)) output = output.replace(/WL/g, this.getWeekDayLetter())
-		if (output.match(/wl/)) output = output.replace(/wl/g, this.getWeekDayLetter())
+		if (output.match(/dw/)) output = output.replace(/dw/g, (gregorian ? super.getDay() || 7 : this.getDay()).toString())
+		if (output.match(/WN/)) output = output.replace(/WN/g, weekDayName)
+		if (output.match(/wn/)) output = output.replace(/wn/g, weekDayName)
+		if (output.match(/WL/)) output = output.replace(/WL/g, weekDayLetter)
+		if (output.match(/wl/)) output = output.replace(/wl/g, weekDayLetter)
 
 		// Day of Year
-		if (output.match(/DDDD/)) output = output.replace(/DDDD/g, this.addZero(this.getDayOfYear()))
-		if (output.match(/DDD/)) output = output.replace(/DDD/g, this.getDayOfYear().toString())
+		if (output.match(/DDDD/)) output = output.replace(/DDDD/g, this.addZero(dayOfYear))
+		if (output.match(/DDD/)) output = output.replace(/DDD/g, dayOfYear.toString())
 
 		// Day
-		if (output.match(/DD/)) output = output.replace(/DD/g, this.addZero(this.getDate()))
-		if (output.match(/D/)) output = output.replace(/D/g, this.getDate().toString())
+		if (output.match(/DD/)) output = output.replace(/DD/g, this.addZero(date))
+		if (output.match(/D/)) output = output.replace(/D/g, date.toString())
 
 		// Hours
-		if (output.match(/HH/)) output = output.replace(/HH/g, this.addZero(this.getHours()))
-		if (output.match(/H/)) output = output.replace(/H/g, this.getHours().toString())
-		if (output.match(/hh/)) output = output.replace(/hh/g, this.addZero(this.getHoursISO()))
-		if (output.match(/h/)) output = output.replace(/h/g, this.getHoursISO().toString())
+		const hours = super.getHours()
+		if (output.match(/HH/)) output = output.replace(/HH/g, this.addZero(hours))
+		if (output.match(/H/)) output = output.replace(/H/g, hours.toString())
+		const hoursISO = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
+		if (output.match(/hh/)) output = output.replace(/hh/g, this.addZero(hoursISO))
+		if (output.match(/h/)) output = output.replace(/h/g, hoursISO.toString())
 
 		// Minutes
 		if (output.match(/mm/)) output = output.replace(/mm/g, this.addZero(this.getMinutes()))
@@ -652,8 +698,8 @@ class JalaliX extends Date {
 		if (output.match(/SSS/)) output = output.replace(/SSS/g, this.getMilliseconds().toString())
 
 		// Meridiem
-		if (output.match(/A/)) output = output.replace(/A/g, this.getMeridiem())
-		if (output.match(/a/)) output = output.replace(/a/g, this.getMeridiem())
+		if (output.match(/A/)) output = output.replace(/A/g, meridiem)
+		if (output.match(/a/)) output = output.replace(/a/g, meridiem)
 
 		// Unix Timestamp
 		if (output.match(/X/)) output = output.replace(/X/g, Math.floor(this.getTime() / 1000).toString())
