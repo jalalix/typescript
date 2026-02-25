@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+## 0.6.2
 - Added Persian numerals option to `format` function (third parameter)
 - Added comprehensive **README** with documentation and examples
 
