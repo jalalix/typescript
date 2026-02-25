@@ -848,11 +848,11 @@ class JalaliX extends Date {
 	/**
 	 * Formats the date according to the specified format string.
 	 * @param str - The format string (e.g., "YYYY/MM/DD", "DD MMM YYYY").
-	 * @param gregorian - If true, uses Gregorian calendar; otherwise uses Jalali.
 	 * @param persian - If true, converts digits to Persian numerals (۰-۹).
+	 * @param gregorian - If true, uses Gregorian calendar; otherwise uses Jalali.
 	 * @returns The formatted date string.
 	 */
-	public format(str: string, gregorian?: boolean, persian?: boolean): string {
+	public format(str: string, persian?: boolean, gregorian?: boolean): string {
 		// Initialize placeholders
 		const placeholders: string[] = []
 
