@@ -849,9 +849,10 @@ class JalaliX extends Date {
 	 * Formats the date according to the specified format string.
 	 * @param str - The format string (e.g., "YYYY/MM/DD", "DD MMM YYYY").
 	 * @param gregorian - If true, uses Gregorian calendar; otherwise uses Jalali.
+	 * @param persian - If true, converts digits to Persian numerals (۰-۹).
 	 * @returns The formatted date string.
 	 */
-	public format(str: string, gregorian?: boolean): string {
+	public format(str: string, gregorian?: boolean, persian?: boolean): string {
 		// Initialize placeholders
 		const placeholders: string[] = []
 
@@ -943,7 +944,7 @@ class JalaliX extends Date {
 			output = output.replace(new RegExp(`\uE000${i}\uE001`, 'g'), () => val)
 		})
 
-		return output
+		return persian ? JalaliX.toPersian(output) : output
 	}
 }
 
