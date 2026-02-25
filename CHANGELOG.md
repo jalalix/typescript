@@ -2,6 +2,7 @@
 All notable changes to this package will be documented in this file.
 
 - Added Persian numerals option to `format` function (third parameter)
+- Added comprehensive **README** with documentation and examples
 
 ## 0.6.1
 - Fixed `format` token replacement conflict bug
