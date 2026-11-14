@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Instant-preserving IANA timezone support via `Intl` (`getTimezone` / `setTimezone`, `create(..., { timezone })`)
+- Wall-clock Jalali/Gregorian display and `format` / `toISODate` use the active zone (no `navigator`)
+- Aliases: `default` / `local` / `system` -> host IANA; `utc` / `gmt` -> `UTC`; invalid zones throw
+
 ## 0.7.0
 - Added `parseJalali`, `fromPersian`, `toISODate`, and `format(..., { calendar, persianDigits })`
 - Fixed default import interop and `setFullYear` with Farvardin (`month = 0`)

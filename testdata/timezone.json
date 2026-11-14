@@ -1,0 +1,51 @@
+{
+	"contract": {
+		"aliases": {
+			"default": "hostLocalIana",
+			"local": "hostLocalIana",
+			"system": "hostLocalIana",
+			"utc": "UTC",
+			"gmt": "UTC"
+		},
+		"semantics": "instant-preserving",
+		"invalidZone": "throw"
+	},
+	"cases": [
+		{
+			"id": "tehran_offset_instant",
+			"instantIso": "2025-02-25T00:30:00+03:30",
+			"unixMs": 1740430800000,
+			"withTimezone": "Asia/Tehran",
+			"wallGregorian": "2025-02-25",
+			"wallTime": "00:30:00",
+			"jalaliSlash": "1403/12/07",
+			"jalaliIso": "1403-12-07"
+		},
+		{
+			"id": "same_instant_utc",
+			"instantIso": "2025-02-25T00:30:00+03:30",
+			"unixMs": 1740430800000,
+			"withTimezone": "UTC",
+			"wallGregorian": "2025-02-24",
+			"wallTime": "21:00:00",
+			"jalaliSlash": "1403/12/06",
+			"jalaliIso": "1403-12-06"
+		},
+		{
+			"id": "utc_noon",
+			"instantIso": "2025-02-25T12:00:00Z",
+			"unixMs": 1740484800000,
+			"withTimezone": "Asia/Tehran",
+			"wallGregorian": "2025-02-25",
+			"wallTime": "15:30:00",
+			"jalaliSlash": "1403/12/07",
+			"jalaliIso": "1403-12-07"
+		},
+		{
+			"id": "alias_utc",
+			"unixMs": 1740484800000,
+			"setTimezoneAlias": "utc",
+			"expectTimezone": "UTC"
+		}
+	]
+}

@@ -1,0 +1,144 @@
+{
+	"version": 1,
+	"parityWith": "@jalalix/typescript@0.8.0",
+	"contract": {
+		"api": "JalaliX",
+		"methods": ["create", "parseJalali", "format", "toISODate", "addMonths", "getStartOfMonth", "setTimezone", "getTimezone", "getMonth", "setFullYear"],
+		"monthQuirk": {
+			"getMonth": "1-12",
+			"setMonth": "0-11",
+			"setFullYearMonth": "0-11"
+		},
+		"timezone": {
+			"semantics": "instant-preserving",
+			"aliases": {
+				"default": "hostLocalIana",
+				"local": "hostLocalIana",
+				"system": "hostLocalIana",
+				"utc": "UTC",
+				"gmt": "UTC"
+			},
+			"invalidZone": "throw"
+		}
+	},
+	"calendar": [
+		{
+			"id": "iso_date_local_create",
+			"create": { "isoDate": "2025-02-25" },
+			"expect": {
+				"formatYYYYMMDD": "1403/12/07",
+				"toISODateGregorian": "2025-02-25",
+				"toISODateJalali": "1403-12-07"
+			}
+		},
+		{
+			"id": "utc_noon_create",
+			"create": { "unixMs": 1740484800000, "timezone": "UTC" },
+			"expect": {
+				"formatYYYYMMDD": "1403/12/07",
+				"toISODateGregorian": "2025-02-25",
+				"toISODateJalali": "1403-12-07"
+			}
+		}
+	],
+	"parse": [
+		{
+			"id": "parse_slash",
+			"input": "1403/12/07",
+			"expect": { "toISODateGregorian": "2025-02-25", "formatYYYYMMDD": "1403/12/07" }
+		},
+		{
+			"id": "parse_dash",
+			"input": "1403-12-07",
+			"expect": { "toISODateGregorian": "2025-02-25" }
+		},
+		{
+			"id": "parse_persian_digits",
+			"input": "۱۴۰۳/۱۲/۰۷",
+			"expect": { "toISODateGregorian": "2025-02-25", "formatYYYYMMDD": "1403/12/07" }
+		}
+	],
+	"format": [
+		{
+			"id": "persian_digits_month_name",
+			"create": { "isoDate": "2025-02-25" },
+			"pattern": "DD MMM YYYY",
+			"options": { "persianDigits": true },
+			"expect": "۰۷ اسفند ۱۴۰۳"
+		},
+		{
+			"id": "gregorian_calendar_option",
+			"create": { "isoDate": "2025-02-25" },
+			"pattern": "YYYY-MM-DD",
+			"options": { "calendar": "gregorian" },
+			"expect": "2025-02-25"
+		},
+		{
+			"id": "to_persian_helper",
+			"toPersian": { "input": "1403/12/07", "expect": "۱۴۰۳/۱۲/۰۷" },
+			"fromPersian": { "input": "۱۴۰۳/۱۲/۰۷", "expect": "1403/12/07" }
+		}
+	],
+	"timezone": [
+		{
+			"id": "tehran_offset_instant",
+			"unixMs": 1740430800000,
+			"withTimezone": "Asia/Tehran",
+			"expect": {
+				"jalaliSlash": "1403/12/07",
+				"jalaliIso": "1403-12-07",
+				"wallGregorian": "2025-02-25",
+				"wallTime": "00:30:00",
+				"hours": 0,
+				"minutes": 30,
+				"getTime": 1740430800000
+			}
+		},
+		{
+			"id": "same_instant_utc",
+			"unixMs": 1740430800000,
+			"withTimezone": "UTC",
+			"expect": {
+				"jalaliSlash": "1403/12/06",
+				"jalaliIso": "1403-12-06",
+				"wallGregorian": "2025-02-24",
+				"wallTime": "21:00:00",
+				"hours": 21,
+				"minutes": 0,
+				"getTime": 1740430800000
+			}
+		},
+		{
+			"id": "utc_noon_tehran",
+			"unixMs": 1740484800000,
+			"withTimezone": "Asia/Tehran",
+			"expect": {
+				"jalaliSlash": "1403/12/07",
+				"wallGregorian": "2025-02-25",
+				"wallTime": "15:30:00",
+				"hours": 15,
+				"minutes": 30
+			}
+		},
+		{
+			"id": "alias_utc",
+			"unixMs": 1740484800000,
+			"setTimezoneAlias": "utc",
+			"expectTimezone": "UTC"
+		}
+	],
+	"mutations": [
+		{
+			"id": "add_months_start_of_month",
+			"create": { "isoDate": "2025-02-25" },
+			"ops": ["addMonths:1", "getStartOfMonth"],
+			"expect": { "formatYYYYMMDD": "1404/01/01" }
+		},
+		{
+			"id": "month_quirk_farvardin",
+			"create": { "isoDate": "2025-02-25" },
+			"setFullYear": { "year": 1404, "month0": 0, "day": 1 },
+			"expect": { "getMonth": 1, "formatYYYYMMDD": "1404/01/01" }
+		}
+	]
+}

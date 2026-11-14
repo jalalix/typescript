@@ -1,15 +1,18 @@
 // Types
-import type { JalaliDate, JalaliFormatOptions, JalaliOptions } from './index.types'
+import type { JalaliDate, JalaliFormatOptions, JalaliOptions, JalaliWallParts } from './index.types'
 
 class JalaliX extends Date {
+	// Active IANA timezone id. Internal Date value remains a UTC instant.
+	private timezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone
+
 	private jalali: JalaliDate = {
 		year: 1348,
 		month: 10,
 		day: 11,
-		hours: this.getHours(),
-		min: this.getMinutes(),
-		sec: this.getSeconds(),
-		ms: this.getMilliseconds(),
+		hours: 0,
+		min: 0,
+		sec: 0,
+		ms: 0,
 		isLeapYear: false
 	}
 
@@ -29,16 +32,94 @@ class JalaliX extends Date {
 	private amGregorian = 'AM'
 	private pmGregorian = 'PM'
 
+	// Host IANA timezone (system local).
+	private static hostTimezone(): string {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone
+	}
+
+	// Wall-clock parts of this instant in the active IANA timezone.
+	private getWallParts(): JalaliWallParts {
+		const parts = new Intl.DateTimeFormat('en-US', {
+			timeZone: this.timezone,
+			hourCycle: 'h23',
+			year: 'numeric',
+			month: 'numeric',
+			day: 'numeric',
+			hour: 'numeric',
+			minute: 'numeric',
+			second: 'numeric'
+		}).formatToParts(this)
+
+		const read = (type: Intl.DateTimeFormatPartTypes): number => {
+			const value = parts.find(part => part.type === type)?.value
+			return value !== undefined ? Number(value) : 0
+		}
+
+		let hour = read('hour')
+		if (hour === 24) hour = 0
+
+		return {
+			year: read('year'),
+			month: read('month'),
+			day: read('day'),
+			hour,
+			minute: read('minute'),
+			second: read('second'),
+			ms: ((this.getTime() % 1000) + 1000) % 1000
+		}
+	}
+
 	/**
-	 * Converts the current Date to Jalali (Persian) calendar date.
+	 * Maps a wall-clock datetime in the active timezone to a UTC millisecond instant.
+	 * Iteratively adjusts using formatToParts so DST transitions converge.
+	 */
+	private wallToUtc(y: number, m: number, d: number, h: number, mi: number, s: number, ms: number): number {
+		const want = Date.UTC(y, m - 1, d, h, mi, s)
+		let utc = want
+
+		for (let i = 0; i < 14; i++) {
+			const parts = new Intl.DateTimeFormat('en-US', {
+				timeZone: this.timezone,
+				hourCycle: 'h23',
+				year: 'numeric',
+				month: 'numeric',
+				day: 'numeric',
+				hour: 'numeric',
+				minute: 'numeric',
+				second: 'numeric'
+			}).formatToParts(new Date(utc))
+
+			const read = (type: Intl.DateTimeFormatPartTypes): number => {
+				const value = parts.find(part => part.type === type)?.value
+				return value !== undefined ? Number(value) : 0
+			}
+
+			let hour = read('hour')
+			if (hour === 24) hour = 0
+
+			const got = Date.UTC(read('year'), read('month') - 1, read('day'), hour, read('minute'), read('second'))
+			const diff = want - got
+			if (diff === 0) break
+			utc += diff
+		}
+
+		return Math.floor(utc / 1000) * 1000 + (((ms % 1000) + 1000) % 1000)
+	}
+
+	/**
+	 * Converts the current Date to Jalali (Persian) calendar date in the active timezone.
 	 * @returns The Jalali date object with year, month, day, hours, minutes, seconds, milliseconds, and isLeapYear.
 	 */
 	private toJalali(): JalaliDate {
 		if (!this.isConverted) {
-			// Midnight, January 1, 1970 GMT.
-			const baseDate = new Date('1970-01-01')
-			const diffDate = this.valueOf() - baseDate.valueOf()
-			const diffDays = Math.floor(diffDate / this.dateLength)
+			const wall = this.getWallParts()
+			const civilDay = Date.UTC(wall.year, wall.month - 1, wall.day) / this.dateLength
+			const baseDay = Date.UTC(1970, 0, 1) / this.dateLength
+			const diffDays = civilDay - baseDay
+
+			this.jalali.year = 1348
+			this.jalali.month = 10
+			this.jalali.day = 11
 
 			if (diffDays > 0)
 				for (let i = 0; i < diffDays; i++) {
@@ -85,6 +166,10 @@ class JalaliX extends Date {
 				}
 			}
 
+			this.jalali.hours = wall.hour
+			this.jalali.min = wall.minute
+			this.jalali.sec = wall.second
+			this.jalali.ms = wall.ms
 			this.jalali.isLeapYear = this.checkLeapYear(this.jalali.year)
 			this.isConverted = true
 		}
@@ -93,19 +178,20 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Converts a Jalali date to Gregorian timestamp.
+	 * Converts a Jalali date (wall clock in the active zone) to a UTC timestamp.
 	 * @param jDate - The Jalali date object to convert.
 	 * @returns The timestamp in milliseconds.
 	 */
 	private toGregorian(jDate: JalaliDate): number {
+		const wall = this.getWallParts()
 		const jalali = {
 			year: 1348,
 			month: 10,
 			day: 11,
-			hours: this.getHours(),
-			min: this.getMinutes(),
-			sec: this.getSeconds(),
-			ms: this.getMilliseconds(),
+			hours: jDate.hours ?? wall.hour,
+			min: jDate.min ?? wall.minute,
+			sec: jDate.sec ?? wall.second,
+			ms: jDate.ms ?? wall.ms,
 			isLeapYear: false
 		}
 
@@ -162,10 +248,22 @@ class JalaliX extends Date {
 			}
 		}
 
-		const outputTime =
-			diffDays * this.dateLength + (super.getHours() * 3600 + (super.getMinutes() + super.getTimezoneOffset()) * 60 + super.getSeconds()) * 1000 + super.getMilliseconds()
+		const hours = jDate.hours !== undefined ? jDate.hours : wall.hour
+		const min = jDate.min !== undefined ? jDate.min : wall.minute
+		const sec = jDate.sec !== undefined ? jDate.sec : wall.second
+		const ms = jDate.ms !== undefined ? jDate.ms : wall.ms
+		const wallAsUtc = diffDays * this.dateLength + (hours * 3600 + min * 60 + sec) * 1000 + ms
+		const civil = new Date(wallAsUtc)
 
-		return outputTime
+		return this.wallToUtc(
+			civil.getUTCFullYear(),
+			civil.getUTCMonth() + 1,
+			civil.getUTCDate(),
+			civil.getUTCHours(),
+			civil.getUTCMinutes(),
+			civil.getUTCSeconds(),
+			civil.getUTCMilliseconds()
+		)
 	}
 
 	/**
@@ -223,21 +321,33 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Returns the day of the year (1-366) in Gregorian calendar.
-	 * @returns The day of the year.
+	 * Gregorian weekday index (0=Sunday … 6=Saturday) for the wall date in the active zone.
 	 */
-	private getGregorianDayOfYear(): number {
-		const start = new Date(super.getFullYear(), 0, 0).getTime()
+	private getWallWeekday(): number {
+		const wall = this.getWallParts()
 
-		return Math.ceil((this.getTime() - start) / this.dateLength)
+		return new Date(Date.UTC(wall.year, wall.month - 1, wall.day)).getUTCDay()
 	}
 
 	/**
-	 * Returns the ISO week number of the year in Gregorian calendar.
+	 * Returns the day of the year (1-366) in Gregorian calendar (wall date in active zone).
+	 * @returns The day of the year.
+	 */
+	private getGregorianDayOfYear(): number {
+		const wall = this.getWallParts()
+		const start = Date.UTC(wall.year, 0, 0)
+		const civil = Date.UTC(wall.year, wall.month - 1, wall.day)
+
+		return Math.round((civil - start) / this.dateLength)
+	}
+
+	/**
+	 * Returns the ISO week number of the year in Gregorian calendar (wall date in active zone).
 	 * @returns The week number (1-53).
 	 */
 	private getGregorianWeekOfYear(): number {
-		const d = new Date(Date.UTC(super.getFullYear(), super.getMonth(), super.getDate()))
+		const wall = this.getWallParts()
+		const d = new Date(Date.UTC(wall.year, wall.month - 1, wall.day))
 		d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
 		const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
 
@@ -249,7 +359,7 @@ class JalaliX extends Date {
 	 * @returns The day name (e.g., "Monday").
 	 */
 	private getGregorianWeekDayName(): string {
-		return this.weekDaysGregorianNames[super.getDay()]
+		return this.weekDaysGregorianNames[this.getWallWeekday()]
 	}
 
 	/**
@@ -257,7 +367,7 @@ class JalaliX extends Date {
 	 * @returns The day letter (e.g., "M" for Monday).
 	 */
 	private getGregorianWeekDayLetter(): string {
-		return this.weekDaysGregorianLetters[super.getDay()]
+		return this.weekDaysGregorianLetters[this.getWallWeekday()]
 	}
 
 	/**
@@ -277,23 +387,28 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Extracts and returns the UTC timezone string from the Date.
+	 * Extracts and returns the GMT offset string for the active timezone.
 	 * @returns The timezone string (e.g., " GMT+0330").
 	 */
 	private getUTCTimezone(): string {
-		const dateString = super.toString()
-		const timezoneMatch = dateString.match(/ GMT([0-9a-zA-Z\+\-\(\) ]+)/)
+		const wall = this.getWallParts()
+		const asUtc = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second, wall.ms)
+		const offsetMin = Math.round((asUtc - this.getTime()) / 60000)
+		const sign = offsetMin >= 0 ? '+' : '-'
+		const abs = Math.abs(offsetMin)
+		const hh = Math.floor(abs / 60)
+		const mm = abs % 60
 
-		return `${timezoneMatch && timezoneMatch.length > 1 ? ` GMT${timezoneMatch[1]}` : ''}`
+		return ` GMT${sign}${this.addZero(hh)}${this.addZero(mm)}`
 	}
 
 	/**
-	 * Adjusts the date by adding the specified number of days.
+	 * Adjusts the date by adding the specified number of days (24h steps).
 	 * @param date - The number of days to add (can be negative).
-	 * @returns The result of setDate.
+	 * @returns The result of setTime.
 	 */
 	private normalizeDate(date: number): number {
-		return super.setDate(super.getDate() + date)
+		return super.setTime(this.getTime() + date * this.dateLength)
 	}
 
 	/**
@@ -330,18 +445,25 @@ class JalaliX extends Date {
 
 	/**
 	 * Normalizes timezone string to a standard format.
+	 * Aliases: `default` / `local` / `system` -> host IANA; `utc` / `gmt` -> `UTC`.
+	 * Otherwise validates with Intl and returns canonical IANA casing when available.
 	 * @param timezone - The timezone string (e.g., "UTC", "local", "Asia/Tehran").
 	 * @returns The normalized timezone string.
 	 */
 	private normalizeTimezone(timezone: string | undefined): string {
-		if (timezone === undefined || timezone === null) return this.getTimezone()
-		else {
-			const lowered = timezone.toLowerCase()
+		if (timezone === undefined || timezone === null) return this.timezone
 
-			if (lowered === 'default') return this.getTimezone()
-			else if (lowered === 'local' || lowered === 'system') return this.getTimezone()
-			else if (lowered === 'utc' || lowered === 'gmt') return 'UTC'
-			else return lowered
+		const lowered = timezone.toLowerCase()
+
+		if (lowered === 'default' || lowered === 'local' || lowered === 'system') return JalaliX.hostTimezone()
+		if (lowered === 'utc' || lowered === 'gmt') return 'UTC'
+
+		try {
+			const resolved = new Intl.DateTimeFormat('en-US', { timeZone: timezone }).resolvedOptions().timeZone
+
+			return resolved || timezone
+		} catch {
+			throw new Error(`Invalid IANA timezone: ${timezone}`)
 		}
 	}
 
@@ -418,11 +540,31 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Gets the day of the week (1=Saturday, 7=Friday in Jalali).
+	 * Gets the day of the week (1=Saturday, 7=Friday in Jalali) for the wall date in the active zone.
 	 * @returns The day number (1-7).
 	 */
 	public getDay(): number {
-		return (super.getDay() - this.firstDayOfWeek + 7 + 1) % 7
+		return (this.getWallWeekday() - this.firstDayOfWeek + 7 + 1) % 7
+	}
+
+	// Gets the hours value (wall time in the active timezone).
+	public getHours(): number {
+		return this.getWallParts().hour
+	}
+
+	// Gets the minutes value (wall time in the active timezone).
+	public getMinutes(): number {
+		return this.getWallParts().minute
+	}
+
+	// Gets the seconds value (wall time in the active timezone).
+	public getSeconds(): number {
+		return this.getWallParts().second
+	}
+
+	// Gets the milliseconds value (same for all zones; kept for API symmetry).
+	public getMilliseconds(): number {
+		return ((this.getTime() % 1000) + 1000) % 1000
 	}
 
 	/**
@@ -439,60 +581,57 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Sets the milliseconds value in the Date object using local time.
+	 * Sets the milliseconds value using wall time in the active timezone.
 	 * @param ms A numeric value equal to the millisecond value.
 	 */
 	public setMilliseconds(ms: number): number {
-		super.setMilliseconds(ms)
-		this.jalali.ms = ms
+		const wall = this.getWallParts()
+		super.setTime(this.wallToUtc(wall.year, wall.month, wall.day, wall.hour, wall.minute, wall.second, ms))
+		this.reset()
 
 		return this.getTime()
 	}
 
 	/**
-	 * Sets the seconds value in the Date object using local time.
+	 * Sets the seconds value using wall time in the active timezone.
 	 * @param sec A numeric value equal to the seconds value.
 	 * @param ms A numeric value equal to the milliseconds value.
 	 */
 	public setSeconds(sec: number, ms?: number): number {
-		super.setSeconds(sec, ms)
-		this.jalali.sec = sec
-
-		if (ms) this.jalali.ms = ms
+		const wall = this.getWallParts()
+		super.setTime(this.wallToUtc(wall.year, wall.month, wall.day, wall.hour, wall.minute, sec, ms !== undefined ? ms : wall.ms))
+		this.reset()
 
 		return this.getTime()
 	}
 
 	/**
-	 * Sets the minutes value in the Date object using local time.
+	 * Sets the minutes value using wall time in the active timezone.
 	 * @param min A numeric value equal to the minutes value.
 	 * @param sec A numeric value equal to the seconds value.
 	 * @param ms A numeric value equal to the milliseconds value.
 	 */
 	public setMinutes(min: number, sec?: number, ms?: number): number {
-		super.setMinutes(min, sec, ms)
-		this.jalali.min = min
-
-		if (sec) this.jalali.sec = sec
-		if (ms) this.jalali.ms = ms
+		const wall = this.getWallParts()
+		super.setTime(this.wallToUtc(wall.year, wall.month, wall.day, wall.hour, min, sec !== undefined ? sec : wall.second, ms !== undefined ? ms : wall.ms))
+		this.reset()
 
 		return this.getTime()
 	}
 
 	/**
-	 * Sets the hour value in the Date object using local time.
+	 * Sets the hour value using wall time in the active timezone.
 	 * @param hours A numeric value equal to the hours value.
 	 * @param min A numeric value equal to the minutes value.
 	 * @param sec A numeric value equal to the seconds value.
 	 * @param ms A numeric value equal to the milliseconds value.
 	 */
 	public setHours(hours: number, min?: number, sec?: number, ms?: number): number {
-		super.setHours(hours, min, sec, ms)
-		this.jalali.hours = hours
-
-		if (min) this.jalali.min = min
-		if (sec) this.jalali.sec = sec
-		if (ms) this.jalali.ms = ms
+		const wall = this.getWallParts()
+		super.setTime(
+			this.wallToUtc(wall.year, wall.month, wall.day, hours, min !== undefined ? min : wall.minute, sec !== undefined ? sec : wall.second, ms !== undefined ? ms : wall.ms)
+		)
+		this.reset()
 
 		return this.getTime()
 	}
@@ -652,19 +791,22 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Creates a copy of this JalaliX instance.
-	 * @returns A new JalaliX instance with the same timestamp.
+	 * Creates a copy of this JalaliX instance (same instant and timezone).
+	 * @returns A new JalaliX instance with the same timestamp and zone.
 	 */
 	public clone(): JalaliX {
-		return new JalaliX(this.valueOf())
+		const output = new JalaliX(this.valueOf())
+		output.timezone = this.timezone
+
+		return output
 	}
 
 	/**
-	 * Gets the timezone of the system.
+	 * Gets the active IANA timezone of this instance.
 	 * @returns The IANA timezone string (e.g., "Asia/Tehran").
 	 */
 	public getTimezone(): string {
-		return Intl.DateTimeFormat().resolvedOptions().timeZone
+		return this.timezone
 	}
 
 	/**
@@ -726,7 +868,7 @@ class JalaliX extends Date {
 	 * @returns "AM" or "PM".
 	 */
 	private getGregorianMeridiem(): string {
-		const hours = super.getHours()
+		const hours = this.getHours()
 
 		return hours >= 12 ? this.pmGregorian : this.amGregorian
 	}
@@ -817,11 +959,15 @@ class JalaliX extends Date {
 
 	/**
 	 * Creates a new JalaliX instance with the specified timezone.
+	 * Instant-preserving: `getTime()` stays the same; only the zone id (and wall/Jalali display) changes.
 	 * @param timezone - The timezone string (e.g., "UTC", "Asia/Tehran").
 	 * @returns A new JalaliX instance in the specified timezone.
 	 */
 	public setTimezone(timezone: string | undefined): JalaliX {
-		return new JalaliX(this.toLocaleString(navigator.language ?? 'en', { timeZone: this.normalizeTimezone(timezone) }))
+		const output = new JalaliX(this.getTime())
+		output.timezone = this.normalizeTimezone(timezone)
+
+		return output
 	}
 
 	/**
@@ -889,17 +1035,15 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Returns a calendar date string using local getters (no UTC shift from `toISOString()`).
-	 * @param calendar - `"gregorian"` (default) → `YYYY-MM-DD` Gregorian; `"jalali"` → Jalali `YYYY-MM-DD`.
+	 * Returns a calendar date string using wall getters in the active timezone (no UTC shift from `toISOString()`).
+	 * @param calendar - `"gregorian"` (default) -> `YYYY-MM-DD` Gregorian; `"jalali"` -> Jalali `YYYY-MM-DD`.
 	 */
 	public toISODate(calendar: 'jalali' | 'gregorian' = 'gregorian'): string {
 		if (calendar === 'jalali') return this.format('YYYY-MM-DD')
 
-		const year = super.getFullYear()
-		const month = super.getMonth() + 1
-		const date = super.getDate()
+		const wall = this.getWallParts()
 
-		return `${year}-${this.addZero(month)}-${this.addZero(date)}`
+		return `${wall.year}-${this.addZero(wall.month)}-${this.addZero(wall.day)}`
 	}
 
 	/**
@@ -937,11 +1081,12 @@ class JalaliX extends Date {
 		// Initialize output
 		let output = str
 
-		const year = useGregorian ? super.getFullYear() : this.getFullYear()
-		const month = useGregorian ? super.getMonth() + 1 : this.getMonth()
+		const wall = this.getWallParts()
+		const year = useGregorian ? wall.year : this.getFullYear()
+		const month = useGregorian ? wall.month : this.getMonth()
 		const weekOfYear = useGregorian ? this.getGregorianWeekOfYear() : this.getWeekOfYear()
 		const dayOfYear = useGregorian ? this.getGregorianDayOfYear() : this.getDayOfYear()
-		const date = useGregorian ? super.getDate() : this.getDate()
+		const date = useGregorian ? wall.day : this.getDate()
 		const monthName = useGregorian ? this.getGregorianMonth(month) : this.getJalaliMonth(month)
 		const weekDayName = useGregorian ? this.getGregorianWeekDayName() : this.getWeekDayName()
 		const weekDayLetter = useGregorian ? this.getGregorianWeekDayLetter() : this.getWeekDayLetter()
@@ -965,7 +1110,7 @@ class JalaliX extends Date {
 
 		// Day of Week
 		if (output.match(/DW/)) output = output.replace(/DW/g, () => ph(this.getDayISO().toString()))
-		if (output.match(/dw/)) output = output.replace(/dw/g, () => ph((useGregorian ? super.getDay() || 7 : this.getDay()).toString()))
+		if (output.match(/dw/)) output = output.replace(/dw/g, () => ph((useGregorian ? this.getWallWeekday() || 7 : this.getDay()).toString()))
 		if (output.match(/WN/)) output = output.replace(/WN/g, () => ph(weekDayName))
 		if (output.match(/wn/)) output = output.replace(/wn/g, () => ph(weekDayName))
 		if (output.match(/WL/)) output = output.replace(/WL/g, () => ph(weekDayLetter))
@@ -979,8 +1124,8 @@ class JalaliX extends Date {
 		if (output.match(/DD/)) output = output.replace(/DD/g, () => ph(this.addZero(date)))
 		if (output.match(/D/)) output = output.replace(/D/g, () => ph(date.toString()))
 
-		// Hours
-		const hours = super.getHours()
+		// Hours (wall time in active timezone)
+		const hours = this.getHours()
 		if (output.match(/HH/)) output = output.replace(/HH/g, () => ph(this.addZero(hours)))
 		if (output.match(/H/)) output = output.replace(/H/g, () => ph(hours.toString()))
 

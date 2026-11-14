@@ -19,3 +19,13 @@ export type JalaliFormatOptions = {
 	/** Convert digits to Persian numerals (۰-۹). Default: false */
 	persianDigits?: boolean
 }
+
+export type JalaliWallParts = {
+	year: number
+	month: number
+	day: number
+	hour: number
+	minute: number
+	second: number
+	ms: number
+}

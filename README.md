@@ -20,7 +20,33 @@ date.format('DD MMM YYYY', { persianDigits: true }) // ۰۷ اسفند ۱۴۰۳
 JalaliX.parseJalali('1403/12/07').toISODate() // 2025-02-25
 ```
 
-`toISODate()` uses local getters. Prefer it over `toISOString().slice(0, 10)` when you need a calendar date string.
+`toISODate()` uses wall-clock getters in the active timezone. Prefer it over `toISOString().slice(0, 10)` when you need a calendar date string.
+
+## Timezone
+
+Internal storage is always a **UTC Unix millisecond instant** plus an IANA timezone id. `setTimezone` is **instant-preserving**: the timestamp stays the same; only the zone (and therefore wall clock / Jalali day) changes.
+
+```ts
+const d = JalaliX.create(1740430800000) // 2025-02-25T00:30:00+03:30
+
+const tehran = d.setTimezone('Asia/Tehran')
+tehran.format('YYYY/MM/DD') // 1403/12/07
+tehran.format('HH:mm') // 00:30
+
+const utc = d.setTimezone('UTC')
+utc.format('YYYY/MM/DD') // 1403/12/06
+utc.format('HH:mm') // 21:00
+
+tehran.getTime() === utc.getTime() // true
+```
+
+- **Aliases:** `utc` / `gmt` -> `UTC`; `local` / `default` / `system` -> host IANA from `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+- **Invalid zone** -> throws `Error`.
+- Requires **Node 18+** or a modern browser with `Intl` IANA support. No dependencies. Does not use `navigator`.
+
+```ts
+JalaliX.create(new Date(), { timezone: 'Asia/Tehran' })
+```
 
 ## Install
 
@@ -83,8 +109,8 @@ JalaliX.fromPersian('۱۴۰۳/۱۲/۰۷') // 1403/12/07
 
 This is easy to get wrong:
 
-- `getMonth()` → 1..12 (Farvardin = 1)
-- `setMonth(m)` / `setFullYear(y, m)` → 0..11, same as `Date` (Farvardin = 0)
+- `getMonth()` -> 1..12 (Farvardin = 1)
+- `setMonth(m)` / `setFullYear(y, m)` -> 0..11, same as `Date` (Farvardin = 0)
 
 ```ts
 const d = JalaliX.create(new Date())
@@ -121,17 +147,18 @@ Static:
 - `toPersian(str)` / `fromPersian(str)`
 - `compare(a, b)` — true if `a` is before `b`
 
-`options` is `{ timezone?: string }` (e.g. `'Asia/Tehran'`).
+`options` is `{ timezone?: string }` (IANA id or alias; see [Timezone](#timezone)).
 
 Instance (main ones):
 
 - `format(...)`, `toISODate(calendar?)`
 - `toString()`, `toDateString()`, `toLocaleDateString()`, `toLocaleTimeString()`
 - `getFullYear()`, `getMonth()`, `getDate()`, `getDay()`, …
+- `getHours` / `getMinutes` / `getSeconds` / `getMilliseconds` (wall time in active zone)
 - `setFullYear`, `setMonth`, `setDate`, `setHours`, …
 - `addYears`, `addMonths`, `addWeeks`, `addDays`
 - `getStartOfYear` / `Month` / `Week` / `Day` and matching `getEndOf*`
-- `clone()`, `setTimezone(tz)`, `getTimezone()`
+- `clone()`, `setTimezone(tz)` (instant-preserving), `getTimezone()`
 
 JalaliX extends `Date`, so you can pass it where a `Date` is expected.
 
