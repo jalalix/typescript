@@ -9,4 +9,13 @@ export type JalaliDate = {
 	isLeapYear: boolean
 }
 
-export type JalaliOptions = { timezone: string }
+export type JalaliOptions = {
+	timezone?: string
+}
+
+export type JalaliFormatOptions = {
+	/** Use Gregorian calendar instead of Jalali. Default: false */
+	calendar?: 'jalali' | 'gregorian'
+	/** Convert digits to Persian numerals (۰-۹). Default: false */
+	persianDigits?: boolean
+}

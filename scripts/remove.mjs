@@ -18,7 +18,7 @@ if (existsSync(packagePath)) {
 		files.map(file => {
 			const filePath = `./${file}`
 
-			if (existsSync(filePath) && !['LICENSE', 'README.md'].includes(file)) {
+			if (existsSync(filePath) && !['LICENSE', 'README.md', 'CHANGELOG.md'].includes(file)) {
 				console.log(`Removing ${file}`)
 				rimraf(filePath)
 			}

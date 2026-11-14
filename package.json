@@ -5,7 +5,7 @@
 	"main": "index.js",
 	"module": "index.js",
 	"types": "index.d.ts",
-	"description": "",
+	"description": "Jalali (Persian/Shamsi) calendar for JavaScript and TypeScript. Extends Date, no dependencies.",
 	"author": "Hossein Maklavani <hos.mohamadi@gmail.com> (https://maklavani.dev)",
 	"contributors": [
 		{
@@ -14,20 +14,15 @@
 			"url": "https://maklavani.dev"
 		}
 	],
-	"scripts": {
-		"dev": "nodemon src/index.ts",
-		"build": "npm run remove && tsc --build tsconfig.json",
-		"remove": "ts-node scripts/remove.mjs"
-	},
 	"license": "MIT",
 	"keywords": [
 		"jalalix",
 		"jalali",
+		"jalaali",
 		"shamsi",
 		"persian",
+		"farsi",
 		"khorshidi",
-		"solar",
-		"hijri",
 		"calendar",
 		"date",
 		"typescript"
@@ -46,18 +41,37 @@
 		"url": "https://github.com/jalalix/typescript/issues"
 	},
 	"homepage": "https://jalalix.com",
+	"scripts": {
+		"dev": "nodemon --exec \"node --experimental-strip-types\" src/index.ts",
+		"build": "npm run remove && tsc -p tsconfig.json",
+		"remove": "node scripts/remove.mjs",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.6",
+		"nodemon": "^3.1.14",
+		"rimraf": "^6.1.4",
+		"typescript": "^7.0.2"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"require": "./index.js",
+			"import": "./index.js",
+			"default": "./index.js"
+		}
+	},
+	"sideEffects": false,
 	"files": [
 		"index.d.ts",
 		"index.js",
 		"index.types.d.ts",
 		"index.types.js",
 		"LICENSE",
-		"README.md"
-	],
-	"devDependencies": {
-		"nodemon": "^3.1.14",
-		"rimraf": "^6.1.3",
-		"ts-node": "^10.9.2",
-		"typescript": "^5.9.3"
-	}
+		"README.md",
+		"CHANGELOG.md"
+	]
 }

@@ -1,5 +1,5 @@
 // Types
-import type { JalaliDate, JalaliOptions } from './index.types'
+import type { JalaliDate, JalaliFormatOptions, JalaliOptions } from './index.types'
 
 class JalaliX extends Date {
 	private jalali: JalaliDate = {
@@ -525,7 +525,7 @@ class JalaliX extends Date {
 		this.reset()
 
 		// Normalize date
-		if (date) {
+		if (date !== undefined) {
 			jDate = this.toJalali()
 			this.normalizeDate(date - jDate.day)
 
@@ -545,14 +545,14 @@ class JalaliX extends Date {
 	public setFullYear(year: number, month?: number, date?: number): number {
 		let jDate = this.toJalali()
 
-		// Normalize Jalali
-		this.normalizeJalali(jDate, year, month ? month + 1 : jDate.month, jDate.day)
+		// Normalize Jalali (month may be 0 = Farvardin — do not use truthiness)
+		this.normalizeJalali(jDate, year, month !== undefined ? month + 1 : jDate.month, jDate.day)
 
 		// Reset
 		this.reset()
 
 		// Normalize date
-		if (date) {
+		if (date !== undefined) {
 			jDate = this.toJalali()
 			this.normalizeDate(date - jDate.day)
 
@@ -564,7 +564,7 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Creates a JalaliX instance from a date value.
+	 * Creates a JalaliX instance from a Gregorian date value.
 	 * @param date - The date value (timestamp, ISO string, or Date object).
 	 * @param options - Optional configuration including timezone.
 	 * @returns A new JalaliX instance.
@@ -574,6 +574,36 @@ class JalaliX extends Date {
 
 		// Check Timezone
 		if (options?.timezone) output = output.setTimezone(options.timezone)
+
+		return output
+	}
+
+	/**
+	 * Parses a Jalali date string into a JalaliX instance.
+	 * Accepts `YYYY/MM/DD` or `YYYY-MM-DD`, optional time (`HH:mm` / `HH:mm:ss`), and Persian digits.
+	 * Named `parseJalali` because `Date.parse` already exists on the base class.
+	 * @param value - Jalali date string (e.g. "1403/12/07", "۱۴۰۳-۱۲-۰۷ 14:30").
+	 * @param options - Optional configuration including timezone.
+	 * @returns A new JalaliX instance.
+	 */
+	public static parseJalali(value: string, options?: JalaliOptions): JalaliX {
+		const normalized = JalaliX.fromPersian(String(value)).trim()
+		const match = normalized.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/)
+
+		if (!match) throw new Error(`JalaliX.parseJalali: invalid Jalali date "${value}"`)
+
+		const year = Number(match[1])
+		const month = Number(match[2])
+		const day = Number(match[3])
+		const hours = Number(match[4] ?? 0)
+		const minutes = Number(match[5] ?? 0)
+		const seconds = Number(match[6] ?? 0)
+
+		if (month < 1 || month > 12 || day < 1 || day > 31) throw new Error(`JalaliX.parseJalali: invalid Jalali date "${value}"`)
+
+		const output = JalaliX.create(new Date(), options)
+		output.setFullYear(year, month - 1, day)
+		output.setHours(hours, minutes, seconds, 0)
 
 		return output
 	}
@@ -596,6 +626,19 @@ class JalaliX extends Date {
 		for (let i = 0; i <= 9; i++) str = str.replace(new RegExp(`${i}`, 'g'), this.persianNumbers[i])
 
 		return str
+	}
+
+	/**
+	 * Converts Persian numerals (۰-۹) to Western numerals (0-9) in a string.
+	 * @param str - The string containing Persian numerals.
+	 * @returns The string with Western numerals.
+	 */
+	public static fromPersian(str: string): string {
+		let output = str
+
+		for (let i = 0; i <= 9; i++) output = output.replace(new RegExp(this.persianNumbers[i], 'g'), String(i))
+
+		return output
 	}
 
 	/**
@@ -846,13 +889,40 @@ class JalaliX extends Date {
 	}
 
 	/**
+	 * Returns a calendar date string using local getters (no UTC shift from `toISOString()`).
+	 * @param calendar - `"gregorian"` (default) → `YYYY-MM-DD` Gregorian; `"jalali"` → Jalali `YYYY-MM-DD`.
+	 */
+	public toISODate(calendar: 'jalali' | 'gregorian' = 'gregorian'): string {
+		if (calendar === 'jalali') return this.format('YYYY-MM-DD')
+
+		const year = super.getFullYear()
+		const month = super.getMonth() + 1
+		const date = super.getDate()
+
+		return `${year}-${this.addZero(month)}-${this.addZero(date)}`
+	}
+
+	/**
 	 * Formats the date according to the specified format string.
+	 * Prefer `format(str, { calendar, persianDigits })`. Positional booleans remain supported:
+	 * `format(str, persianDigits?, gregorian?)`.
 	 * @param str - The format string (e.g., "YYYY/MM/DD", "DD MMM YYYY").
-	 * @param persian - If true, converts digits to Persian numerals (۰-۹).
-	 * @param gregorian - If true, uses Gregorian calendar; otherwise uses Jalali.
+	 * @param persianOrOptions - Persian digits flag, or options object.
+	 * @param gregorian - If true, uses Gregorian calendar (positional API only).
 	 * @returns The formatted date string.
 	 */
-	public format(str: string, persian?: boolean, gregorian?: boolean): string {
+	public format(str: string, persianOrOptions?: boolean | JalaliFormatOptions, gregorian?: boolean): string {
+		let persian = false
+		let useGregorian = false
+
+		if (typeof persianOrOptions === 'object' && persianOrOptions !== null) {
+			persian = Boolean(persianOrOptions.persianDigits)
+			useGregorian = persianOrOptions.calendar === 'gregorian'
+		} else {
+			persian = Boolean(persianOrOptions)
+			useGregorian = Boolean(gregorian)
+		}
+
 		// Initialize placeholders
 		const placeholders: string[] = []
 
@@ -867,15 +937,15 @@ class JalaliX extends Date {
 		// Initialize output
 		let output = str
 
-		const year = gregorian ? super.getFullYear() : this.getFullYear()
-		const month = gregorian ? super.getMonth() + 1 : this.getMonth()
-		const weekOfYear = gregorian ? this.getGregorianWeekOfYear() : this.getWeekOfYear()
-		const dayOfYear = gregorian ? this.getGregorianDayOfYear() : this.getDayOfYear()
-		const date = gregorian ? super.getDate() : this.getDate()
-		const monthName = gregorian ? this.getGregorianMonth(month) : this.getJalaliMonth(month)
-		const weekDayName = gregorian ? this.getGregorianWeekDayName() : this.getWeekDayName()
-		const weekDayLetter = gregorian ? this.getGregorianWeekDayLetter() : this.getWeekDayLetter()
-		const meridiem = gregorian ? this.getGregorianMeridiem() : this.getMeridiem()
+		const year = useGregorian ? super.getFullYear() : this.getFullYear()
+		const month = useGregorian ? super.getMonth() + 1 : this.getMonth()
+		const weekOfYear = useGregorian ? this.getGregorianWeekOfYear() : this.getWeekOfYear()
+		const dayOfYear = useGregorian ? this.getGregorianDayOfYear() : this.getDayOfYear()
+		const date = useGregorian ? super.getDate() : this.getDate()
+		const monthName = useGregorian ? this.getGregorianMonth(month) : this.getJalaliMonth(month)
+		const weekDayName = useGregorian ? this.getGregorianWeekDayName() : this.getWeekDayName()
+		const weekDayLetter = useGregorian ? this.getGregorianWeekDayLetter() : this.getWeekDayLetter()
+		const meridiem = useGregorian ? this.getGregorianMeridiem() : this.getMeridiem()
 		const yearStr = year.toString()
 
 		// Year
@@ -895,7 +965,7 @@ class JalaliX extends Date {
 
 		// Day of Week
 		if (output.match(/DW/)) output = output.replace(/DW/g, () => ph(this.getDayISO().toString()))
-		if (output.match(/dw/)) output = output.replace(/dw/g, () => ph((gregorian ? super.getDay() || 7 : this.getDay()).toString()))
+		if (output.match(/dw/)) output = output.replace(/dw/g, () => ph((useGregorian ? super.getDay() || 7 : this.getDay()).toString()))
 		if (output.match(/WN/)) output = output.replace(/WN/g, () => ph(weekDayName))
 		if (output.match(/wn/)) output = output.replace(/wn/g, () => ph(weekDayName))
 		if (output.match(/WL/)) output = output.replace(/WL/g, () => ph(weekDayLetter))
@@ -949,3 +1019,8 @@ class JalaliX extends Date {
 }
 
 export default JalaliX
+
+// CJS / Node ESM interop: `import JalaliX from '@jalalix/typescript'` resolves to the class
+module.exports = JalaliX
+module.exports.default = JalaliX
+module.exports.__esModule = true

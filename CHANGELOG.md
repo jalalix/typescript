@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+- Added `parseJalali`, `fromPersian`, `toISODate`, and `format(..., { calendar, persianDigits })`
+- Fixed default import interop and `setFullYear` with Farvardin (`month = 0`)
+- Updated README, package metadata, and TypeScript 6+ tsconfig
+
 ## 0.6.2
 - Added Persian numerals option to `format` function (third parameter)
 - Added comprehensive **README** with documentation and examples
