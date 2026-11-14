@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this package will be documented in this file.
 
+## 0.8.0
 - Instant-preserving IANA timezone support via `Intl` (`getTimezone` / `setTimezone`, `create(..., { timezone })`)
 - Wall-clock Jalali/Gregorian display and `format` / `toISODate` use the active zone (no `navigator`)
 - Aliases: `default` / `local` / `system` -> host IANA; `utc` / `gmt` -> `UTC`; invalid zones throw
