@@ -173,4 +173,4 @@ Types are included. You can also import `JalaliOptions` and `JalaliFormatOptions
 
 ## License
 
-MIT. Hossein Maklavani — https://maklavani.dev
+MIT
