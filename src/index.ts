@@ -1,5 +1,5 @@
 // Types
-import type { JalaliDate, JalaliFormatOptions, JalaliOptions, JalaliWallParts } from './index.types'
+import type { JalaliDate, JalaliFormatOptions, JalaliNormalizeOptions, JalaliOptions, JalaliWallParts } from './index.types'
 
 class JalaliX extends Date {
 	// Active IANA timezone id. Internal Date value remains a UTC instant.
@@ -27,6 +27,7 @@ class JalaliX extends Date {
 	private monthsNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 	private monthsGregorianNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 	static persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+	static arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']
 	private am = 'ق.ظ.'
 	private pm = 'ب.ظ.'
 	private amGregorian = 'AM'
@@ -684,7 +685,7 @@ class JalaliX extends Date {
 	public setFullYear(year: number, month?: number, date?: number): number {
 		let jDate = this.toJalali()
 
-		// Normalize Jalali (month may be 0 = Farvardin — do not use truthiness)
+		// Normalize Jalali (month may be 0 = Farvardin - do not use truthiness)
 		this.normalizeJalali(jDate, year, month !== undefined ? month + 1 : jDate.month, jDate.day)
 
 		// Reset
@@ -727,7 +728,7 @@ class JalaliX extends Date {
 	 */
 	public static parseJalali(value: string, options?: JalaliOptions): JalaliX {
 		const normalized = JalaliX.fromPersian(String(value)).trim()
-		const match = normalized.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/)
+		const match = normalized.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/)
 
 		if (!match) throw new Error(`JalaliX.parseJalali: invalid Jalali date "${value}"`)
 
@@ -745,6 +746,103 @@ class JalaliX extends Date {
 		output.setHours(hours, minutes, seconds, 0)
 
 		return output
+	}
+
+	/**
+	 * Soft-normalizes loose query / form date inputs into a Gregorian `YYYY-MM-DD HH:mm:ss` string.
+	 *
+	 * Handles empty/sentinel values (`null`, `undefined`, `Invalid Date`, `NaN`), unix timestamps
+	 * (seconds or milliseconds), Persian/Arabic digits, `/` `-` `.` separators, fractional seconds,
+	 * optional `Z` / offset suffixes, and auto-detects Jalali vs Gregorian by year band:
+	 * years in `jalaliYearMin…jalaliYearMax` (default `1…1899`) are treated as Jalali when the
+	 * civil date is valid; otherwise Gregorian.
+	 *
+	 * Invalid or unrecognized values are returned cleaned (digits normalized) rather than throwing;
+	 * sentinels and non-positive timestamps return `null`. Non-string / non-number values pass through.
+	 * @param value - Raw query value (string, number, or anything else).
+	 * @param options - Optional `{ timezone, jalaliYearMin, jalaliYearMax }`.
+	 * @returns `null`, Gregorian `YYYY-MM-DD HH:mm:ss`, a digit-cleaned string, or the original value.
+	 */
+	public static normalizeQueryDate(value: unknown, options?: JalaliNormalizeOptions): unknown {
+		const isInvalidDate = (typeof value === 'string' && (value.toLowerCase() === 'invalid date' || /nan/i.test(value))) || (typeof value === 'number' && Number.isNaN(value))
+
+		if (value === null || value === undefined || value === 'null' || value === '' || value === 'undefined' || isInvalidDate) return null
+
+		if (typeof value === 'number') return JalaliX.normalizeQueryTimestamp(value, options)
+
+		if (typeof value === 'string') {
+			const trimmed = value.trim()
+
+			if (trimmed !== '' && /^[+-]?\d+(\.\d+)?$/.test(trimmed)) return JalaliX.normalizeQueryTimestamp(Number(trimmed), options)
+		}
+
+		if (typeof value !== 'string') return value
+
+		const digits = JalaliX.fromPersian(value).replace(/(\d{2}:\d{2}:\d{2})\.\d+/, '$1')
+		const match = digits.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?(?:Z|[+-]\d{2}:?\d{2})?)?/)
+
+		if (!match) return digits
+
+		const year = Number(match[1])
+		const month = Number(match[2])
+		const day = Number(match[3])
+		const hour = Number(match[4] ?? 0)
+		const minute = Number(match[5] ?? 0)
+		const second = Number(match[6] ?? 0)
+
+		const jalaliYearMin = options?.jalaliYearMin ?? 1
+		const jalaliYearMax = options?.jalaliYearMax ?? 1899
+		const pad2 = (n: number): string => String(n).padStart(2, '0')
+
+		if (year >= jalaliYearMin && year <= jalaliYearMax && JalaliX.isValidJalaliCivilDate(year, month, day))
+			try {
+				const jalali = `${String(year).padStart(4, '0')}/${pad2(month)}/${pad2(day)} ${pad2(hour)}:${pad2(minute)}:${pad2(second)}`
+
+				return JalaliX.parseJalali(jalali, options).format('YYYY-MM-DD HH:mm:ss', { calendar: 'gregorian' })
+			} catch {
+				// fall through to Gregorian / cleaned
+			}
+
+		if (JalaliX.isValidGregorianDate(year, month, day)) return `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)} ${pad2(hour)}:${pad2(minute)}:${pad2(second)}`
+
+		return digits
+	}
+
+	/**
+	 * Converts an int/float/numeric-string unix timestamp (seconds or ms) to a formatted Gregorian string.
+	 * @param timestamp - Unix timestamp; values `> 9999999999` are treated as milliseconds.
+	 * @param options - Optional `{ timezone }`.
+	 * @returns Gregorian `YYYY-MM-DD HH:mm:ss`, or `null` for non-positive timestamps.
+	 */
+	private static normalizeQueryTimestamp(timestamp: number, options?: JalaliOptions): string | null {
+		let ts = timestamp
+
+		if (ts > 9999999999) ts = Math.floor(ts / 1000)
+		if (ts <= 0) return null
+
+		return JalaliX.create(ts * 1000, options).format('YYYY-MM-DD HH:mm:ss', { calendar: 'gregorian' })
+	}
+
+	// Whether `year/month/day` is a valid Jalali civil date (year >= 1).
+	private static isValidJalaliCivilDate(year: number, month: number, day: number): boolean {
+		if (year < 1 || month < 1 || month > 12 || day < 1) return false
+		if (month <= 6) return day <= 31
+		if (month <= 11) return day <= 30
+
+		const checkYear = (year + 2346) * 0.24219858156
+		const isLeap = checkYear - Math.trunc(checkYear) < 0.24219858156
+
+		return day <= (isLeap ? 30 : 29)
+	}
+
+	// Whether `year/month/day` is a valid Gregorian civil date.
+	private static isValidGregorianDate(year: number, month: number, day: number): boolean {
+		if (month < 1 || month > 12 || day < 1) return false
+
+		const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+		const daysInMonth = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+		return day <= daysInMonth[month - 1]
 	}
 
 	/**
@@ -768,14 +866,17 @@ class JalaliX extends Date {
 	}
 
 	/**
-	 * Converts Persian numerals (۰-۹) to Western numerals (0-9) in a string.
-	 * @param str - The string containing Persian numerals.
+	 * Converts Persian (۰-۹) and Arabic-Indic (٠-٩) numerals to Western numerals (0-9) in a string.
+	 * @param str - The string containing Persian or Arabic-Indic numerals.
 	 * @returns The string with Western numerals.
 	 */
 	public static fromPersian(str: string): string {
 		let output = str
 
-		for (let i = 0; i <= 9; i++) output = output.replace(new RegExp(this.persianNumbers[i], 'g'), String(i))
+		for (let i = 0; i <= 9; i++) {
+			output = output.replace(new RegExp(this.persianNumbers[i], 'g'), String(i))
+			output = output.replace(new RegExp(this.arabicNumbers[i], 'g'), String(i))
+		}
 
 		return output
 	}
