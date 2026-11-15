@@ -1,6 +1,6 @@
 {
 	"version": 1,
-	"parityWith": "@jalalix/typescript@0.8.0",
+	"parityWith": "@jalalix/typescript@0.9.0",
 	"contract": {
 		"api": "JalaliX",
 		"methods": ["create", "parseJalali", "format", "toISODate", "addMonths", "getStartOfMonth", "setTimezone", "getTimezone", "getMonth", "setFullYear"],
